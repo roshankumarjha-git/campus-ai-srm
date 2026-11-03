@@ -4,9 +4,9 @@
 
 ### A smarter way to surface and prioritize campus issues.
 
-A privacy-first campus issue reporting and triage demo for SRM Institute of Science and Technology, Kattankulathur. Students can report facility issues, while wardens and administrators review prioritized incidents and campus hotspots.
+Privacy-conscious campus issue reporting and triage demo for SRM Institute of Science and Technology, Kattankulathur.
 
-[Live Demo](#deployment) · [Features](#features) · [Run Locally](#run-locally) · [Deployment](#deployment)
+[Open the live site](https://campus-ai-srm.vercel.app) · [Features](#features) · [Run locally](#run-locally) · [Deployment](#deployment)
 
 </div>
 
@@ -14,26 +14,29 @@ A privacy-first campus issue reporting and triage demo for SRM Institute of Scie
 
 ## About
 
-Campus AI brings student reports and facilities response into one simple interface. Reports are grouped into incidents, ranked by severity, and shown in a warden dashboard with a map for geographic context. The project is delivered as a standalone static webpage, so it can be previewed locally or hosted on a static site platform.
+Campus AI gives students a simple way to report campus facility issues and gives wardens and administrators a dashboard to review prioritized incidents, summaries, and campus hotspots. The project is deployed on Vercel and can be opened directly in a browser.
 
-> **Project status:** Demonstration prototype. Sign-in and reporting flows are intended for demo use and are not connected to an institutional identity system or production incident-management backend.
+> **Project status:** Demonstration prototype. Sign-in and reporting flows are for demo use and are not connected to an institutional identity system or production incident-management backend.
 
 ## Features
 
 - **Student portal** for submitting campus issue reports.
 - **Warden and admin console** with an AI-prioritized action queue and incident summaries.
-- **Severity map** showing report locations and campus hotspots.
+- **Interactive severity map** for report locations and campus hotspots.
 - **Multi-institution demo data** for switching between configured campuses.
-- **Privacy-conscious report handling** with anonymization and triage features in the prototype.
-- **Responsive, dark interface** designed for desktop and mobile screens.
+- **Privacy-conscious reporting** with anonymization and triage features in the prototype.
+- **Photo and video analysis** through a server-side Gemini API function when configured; text-based severity scoring is used as a fallback.
+- **Responsive dark interface** for desktop and mobile screens.
 
-## Preview
+## Deployment
 
-Open `index.html` in a modern browser. The map requires an internet connection. MapLibre is loaded from a CDN and uses OpenFreeMap’s dark vector style; no map API key is required.
+The live site is hosted on Vercel:
 
-## Run Locally
+**[https://campus-ai-srm.vercel.app](https://campus-ai-srm.vercel.app)**
 
-Run the included local server for the map and AI API:
+The repository is configured for Vercel deployment from its root. There is no frontend build step. Vercel serves the static site and the `api/analyze-media.js` serverless function.
+
+## Run locally
 
 ```bash
 git clone https://github.com/roshankumarjha-git/campus-ai-srm.git
@@ -41,50 +44,22 @@ cd campus-ai-srm
 node dev-server.js
 ```
 
-Then open `http://localhost:4173`. The local server reads `GEMINI_API_KEY` from `.env.local` when that ignored file exists. Opening `index.html` directly with `file://` cannot serve the API route or map worker correctly.
+Open [http://localhost:4173](http://localhost:4173). Use the local server instead of opening `index.html` directly with `file://`; the server supports the API route and map worker. The map needs an internet connection.
 
-## Deployment
+For local photo and video analysis, set `GEMINI_API_KEY` in an ignored `.env.local` file. Never commit API keys or put them in browser-delivered code. On Vercel, the key is configured as a server-side environment variable for the analysis function. If analysis is unavailable, the app falls back to text-based severity scoring. Evidence uploads for AI analysis must be under 3 MB.
 
-This is a static site: the repository root contains `index.html` and there is no build step.
+## Map and attribution
 
-### Vercel
+The interactive map uses [MapLibre GL JS](https://maplibre.org/maplibre-gl-js/) and the [OpenFreeMap](https://openfreemap.org/) dark vector style, with data from [OpenStreetMap](https://www.openstreetmap.org/). An internet connection is required to load the map. Keep the provider and map data attribution visible.
 
-1. Import this repository in Vercel.
-2. Select **Other** as the framework preset.
-3. Leave the build command and output directory at their defaults or blank.
-4. Deploy.
-
-### Render
-
-1. Create a **Static Site** and connect this repository.
-2. Leave the build command empty.
-3. Set the publish directory to `.`.
-4. Deploy.
-
-The included `vercel.json` supplies minimal Vercel configuration.
-
-## AI Media Analysis
-
-Photo and video analysis uses the Gemini API through the Vercel serverless function in `api/analyze-media.js`. The key stays on the server and is never sent to the browser.
-
-To enable it on Vercel, open the project **Settings → Environment Variables**, add `GEMINI_API_KEY`, and redeploy. Create a fresh key in Google AI Studio; do not reuse a key that was previously committed. For local development, put it in the ignored `.env.local` file; `node dev-server.js` loads it automatically. If the key is missing or the API is unavailable, the app falls back to text-based severity scoring. Evidence uploads for AI analysis must be under 3 MB.
-
-Do not put a Gemini or other private API key in `index.html` or any browser-delivered file: visitors can inspect client-side code. Restrict the key to the Gemini API and monitor its usage, since the demo endpoint is publicly reachable when deployed.
-
-## Map Attribution
-
-The map uses [OpenFreeMap](https://openfreemap.org/) with [OpenStreetMap](https://www.openstreetmap.org/) data. MapLibre displays the provider attribution automatically; keep it visible.
-
-## Built With
+## Built with
 
 - HTML, CSS, and JavaScript
-- [MapLibre GL JS](https://maplibre.org/maplibre-gl-js/) for interactive maps
-- [OpenFreeMap](https://openfreemap.org/) vector map style and tiles, based on OpenStreetMap
-
-## Contributing
-
-Suggestions and improvements are welcome. For substantial changes, open an issue first to discuss the proposal, then submit a pull request with a clear description of the change.
+- [MapLibre GL JS](https://maplibre.org/maplibre-gl-js/)
+- [OpenFreeMap](https://openfreemap.org/) map style and tiles
+- Vercel static hosting and serverless functions
+- Gemini API for optional server-side media analysis
 
 ## License
 
-No license has been specified yet. All rights remain with the copyright holder unless a license is added. If you want others to reuse or modify this project, add a license file.
+No license has been specified. All rights remain with the copyright holder unless a license is added.
