@@ -824,19 +824,6 @@
     let attachedMediaMimeType = null;
     let lastAIAnalysis = null; // populated by analyzeMediaWithGemini() once a scan completes
 
-    // ============================================================
-    // GEMINI VISION CONFIG
-    // Get a free key at https://aistudio.google.com/apikey and paste it below.
-    // NOTE (important for a class demo): if you add "Website restrictions" to
-    // this key in Google Cloud Console, opening this file as file:// or from
-    // an unlisted origin will make every request fail with a 403, and the
-    // code below will silently fall back to text-only scoring. Either leave
-    // the key unrestricted for the demo, or add your exact hosting URL.
-    // ============================================================
-    const GEMINI_API_KEY = ''; // Keep credentials out of this public client-side file.
-    const GEMINI_MODEL = 'gemini-3.1-flash-lite'; // current-gen, low-latency, multimodal (image/video/audio/PDF)
-    const GEMINI_ENDPOINT = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`;
-
     // Thresholds that decide when authorities get auto-notified vs. a normal ticket
     const AUTO_ESCALATION_SCORE_THRESHOLD = 82; // CampusAI score at/above this = treated as critical
     const AI_CRITICAL_SEVERITY = 5;              // AI-assigned severity 5/5 always counts as critical
@@ -1034,10 +1021,10 @@
       if (!file) return;
 
       const isVideo = file.type.startsWith('video/');
-      // Gemini's inline_data works for images always; for video keep it short —
-      // large base64 payloads (>~15-18MB) will get rejected by the API.
-      if (isVideo && file.size > 18 * 1024 * 1024) {
-        showToast('Video too large for AI analysis (keep clips under ~15s)', '⚠️');
+      // Vercel serverless requests have a small body limit; leave headroom for base64 encoding.
+      if (file.size > 3 * 1024 * 1024) {
+        showToast('For AI analysis, choose evidence smaller than 3 MB', '⚠️');
+        event.target.value = '';
         return;
       }
 
@@ -1177,11 +1164,6 @@
     }
 
     // Strips the "data:<mime>;base64," prefix Gemini's inline_data field needs raw base64 for.
-    function stripDataUrlPrefix(dataUrl) {
-      const commaIdx = dataUrl.indexOf(',');
-      return commaIdx !== -1 ? dataUrl.slice(commaIdx + 1) : dataUrl;
-    }
-
     async function analyzeMediaWithGemini(dataUrl, mimeType) {
       const statusBox = document.getElementById('aiAnalysisBox');
       const statusLine = document.getElementById('aiAnalysisStatusLine');
@@ -1191,46 +1173,21 @@
       resultLine.classList.add('hidden');
       statusLine.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-cyan-400 pulse-slow"></span> Running Gemini Vision analysis...`;
 
-      if (!GEMINI_API_KEY || GEMINI_API_KEY === 'PASTE_YOUR_GEMINI_API_KEY_HERE') {
-        statusLine.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-amber-400"></span> AI key not configured — using text-based severity only`;
-        lastAIAnalysis = null;
-        return;
-      }
-
-      const prompt = `You are a campus safety triage assistant. Look at the attached photo or video of a campus facility issue.
-Respond with ONLY raw JSON (no markdown fences, no extra text) in exactly this shape:
-{"category":"one of: Electrical & Fire Safety, Sanitation & Water Supply, Hostel & Pest Control, Mess & Food Safety, Campus Transit & Mobility, Internet & IT Lab Services, Civil Infrastructure & Elevators, Campus Safety & Night Lighting, Academic & Classroom Facilities, Waste & Sustainability, Other",
-"severity":1-5 (1=cosmetic/minor, 2=routine maintenance, 3=moderate, 4=urgent repair needed, 5=immediate danger to life/safety e.g. active fire, sparking exposed wiring, structural collapse, someone trapped, medical emergency),
-"isCritical": true only if this poses an immediate danger to life/safety and authorities should be contacted right now, false otherwise,
-"summary":"one short factual sentence describing what is visible"}
-Be conservative: only mark isCritical true for genuine emergencies, not routine wear-and-tear or minor mess.`;
-
       try {
         const controller = new AbortController();
         const timeout = setTimeout(() => controller.abort(), 20000);
 
-        const response = await fetch(GEMINI_ENDPOINT, {
+        const response = await fetch('/api/analyze-media', {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'x-goog-api-key': GEMINI_API_KEY
-          },
+          headers: { 'Content-Type': 'application/json' },
           signal: controller.signal,
-          body: JSON.stringify({
-            contents: [{
-              parts: [
-                { text: prompt },
-                { inline_data: { mime_type: mimeType, data: stripDataUrlPrefix(dataUrl) } }
-              ]
-            }],
-            generationConfig: { maxOutputTokens: 300 }
-          })
+          body: JSON.stringify({ dataUrl, mimeType })
         });
         clearTimeout(timeout);
 
         if (!response.ok) {
-          const errBody = await response.text().catch(() => '');
-          throw new Error(`HTTP ${response.status} — ${errBody.slice(0, 180)}`);
+          const errBody = await response.json().catch(() => ({}));
+          throw new Error(errBody.error || `AI service returned HTTP ${response.status}`);
         }
 
         const data = await response.json();
