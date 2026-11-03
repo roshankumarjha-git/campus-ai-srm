@@ -33,17 +33,15 @@ Open `index.html` in a modern browser. The map requires an internet connection. 
 
 ## Run Locally
 
-The page can be opened directly, but photo AI needs the serverless API route. To try the complete app locally, install Node.js, then run:
+Run the included local server for the map and AI API:
 
 ```bash
 git clone https://github.com/roshankumarjha-git/campus-ai-srm.git
 cd campus-ai-srm
-cp .env.example .env.local
-# Add your key to .env.local (never commit this file)
-npx vercel dev
+node dev-server.js
 ```
 
-Set `GEMINI_API_KEY` in `.env.local`, then open the local URL printed by Vercel CLI. Opening `index.html` directly with `file://` supports the UI but cannot reach the AI API route.
+Then open `http://localhost:4173`. The local server reads `GEMINI_API_KEY` from `.env.local` when that ignored file exists. Opening `index.html` directly with `file://` cannot serve the API route or map worker correctly.
 
 ## Deployment
 
@@ -69,7 +67,7 @@ The included `vercel.json` supplies minimal Vercel configuration.
 
 Photo and video analysis uses the Gemini API through the Vercel serverless function in `api/analyze-media.js`. The key stays on the server and is never sent to the browser.
 
-To enable it on Vercel, open the project **Settings → Environment Variables**, add `GEMINI_API_KEY`, and redeploy. Create a fresh key in Google AI Studio; do not reuse a key that was previously committed. For local development, put it in the ignored `.env.local` file. If the key is missing or the API is unavailable, the app falls back to text-based severity scoring. Evidence uploads for AI analysis must be under 3 MB.
+To enable it on Vercel, open the project **Settings → Environment Variables**, add `GEMINI_API_KEY`, and redeploy. Create a fresh key in Google AI Studio; do not reuse a key that was previously committed. For local development, put it in the ignored `.env.local` file; `node dev-server.js` loads it automatically. If the key is missing or the API is unavailable, the app falls back to text-based severity scoring. Evidence uploads for AI analysis must be under 3 MB.
 
 Do not put a Gemini or other private API key in `index.html` or any browser-delivered file: visitors can inspect client-side code. Restrict the key to the Gemini API and monitor its usage, since the demo endpoint is publicly reachable when deployed.
 
