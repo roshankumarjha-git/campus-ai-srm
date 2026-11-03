@@ -1,0 +1,2012 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Campus AI — SRM Institute of Science & Technology, Kattankulathur</title>
+  
+  <!-- Suppress Tailwind Play CDN notice in console -->
+  <script>
+    const _originalWarn = console.warn;
+    console.warn = (...args) => {
+      if (args[0] && typeof args[0] === 'string' && args[0].includes('cdn.tailwindcss.com')) return;
+      _originalWarn(...args);
+    };
+  </script>
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Modern Urbanova UI fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <!-- Leaflet Map Assets -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+  <style>
+    body {
+      font-family: 'Manrope', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      letter-spacing: -0.015em;
+    }
+    .font-mono {
+      font-family: 'DM Mono', ui-monospace, SFMono-Regular, monospace;
+    }
+    .custom-scrollbar::-webkit-scrollbar { width: 5px; height: 5px; }
+    .custom-scrollbar::-webkit-scrollbar-track { background: #030712; }
+    .custom-scrollbar::-webkit-scrollbar-thumb { background: #1f2937; border-radius: 9999px; }
+    .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #374151; }
+    .pulse-slow {
+      animation: pulse 2.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    }
+    .pulse-rapid {
+      animation: pulseFast 1.2s infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.6; transform: scale(1.05); }
+    }
+    @keyframes pulseFast {
+      0%, 100% { opacity: 1; transform: scale(1); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
+      50% { opacity: 0.85; transform: scale(1.02); box-shadow: 0 0 0 8px rgba(239, 68, 68, 0); }
+    }
+
+    /* Dropdown & Option Visibility Across Browsers */
+    select, select option, select optgroup {
+      background-color: #141f1c !important;
+      color: #f3f7f5 !important;
+    }
+    select option:checked, select option:hover {
+      background-color: #1b2823 !important;
+      color: #58cba2 !important;
+    }
+    optgroup {
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      color: #79cfe5 !important;
+    }
+
+    /* Map Scroll Overflow & Stacking Context Containment */
+    #map {
+      position: relative !important;
+      z-index: 10 !important;
+      overflow: hidden !important;
+      isolation: isolate !important;
+      background: #09110f !important;
+    }
+    .leaflet-container {
+      z-index: 10 !important;
+    }
+    .leaflet-pane {
+      z-index: 1 !important;
+    }
+    .leaflet-top, .leaflet-bottom {
+      z-index: 20 !important;
+    }
+    #adminMapCard {
+      transform: none !important;
+    }
+
+    /* Keep provider tiles unmodified so map labels and attribution stay legible. */
+  </style>
+
+  <style id="urbanova-dark-graphiteemerald">
+    :root{
+      --ref-bg:#08100f;
+      --ref-bg2:#0d1715;
+      --ref-panel:#101a18;
+      --ref-panel2:#141f1c;
+      --ref-field:#1b2523;
+      --ref-field2:#202a28;
+      --ref-border:#2d3b38;
+      --ref-text:#f3f7f5;
+      --ref-muted:#91a19a;
+      --ref-green:#58cba2;
+      --ref-red:#ff626c;
+    }
+    html,body{
+      background:
+        radial-gradient(900px 500px at 12% 5%,rgba(76,183,147,.08),transparent 65%),
+        radial-gradient(850px 500px at 88% 12%,rgba(86,144,170,.055),transparent 65%),
+        linear-gradient(135deg,#08100f 0%,#0d1715 52%,#091210 100%) !important;
+      color:var(--ref-text) !important;
+    }
+    header{
+      background:rgba(5,13,12,.96) !important;
+      border-color:#1f2d29 !important;
+      box-shadow:0 10px 28px rgba(0,0,0,.25) !important;
+    }
+    #studentTab > div, #adminTab > div, #macroTab > div{
+      background:linear-gradient(145deg,#101a18,#111c1a) !important;
+      border-color:var(--ref-border) !important;
+      box-shadow:0 22px 55px rgba(0,0,0,.26) !important;
+    }
+    #studentTab input, #studentTab textarea, #studentTab select{
+      background:linear-gradient(180deg,var(--ref-field2),var(--ref-field)) !important;
+      color:#f0f5f2 !important;
+      border:1px solid #3a4b46 !important;
+      border-radius:11px !important;
+    }
+    #studentTab button[type="submit"]{
+      background:linear-gradient(90deg,#4fc495,#62d0a8) !important;
+      color:#062019 !important;
+    }
+
+    /* ===================== Login Gate ===================== */
+    #loginGate{
+      background:
+        radial-gradient(1100px 620px at 8% 0%, rgba(79,196,149,.14), transparent 60%),
+        radial-gradient(900px 560px at 95% 100%, rgba(64,150,178,.12), transparent 60%),
+        linear-gradient(160deg,#050b0a 0%,#0a1412 45%,#061009 100%);
+    }
+    #loginGate .grid-overlay{
+      background-image:
+        linear-gradient(rgba(255,255,255,.035) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,.035) 1px, transparent 1px);
+      background-size: 34px 34px;
+      mask-image: radial-gradient(ellipse 80% 80% at 30% 20%, black 40%, transparent 85%);
+    }
+    #loginGate input{
+      background:linear-gradient(180deg,var(--ref-field2),var(--ref-field));
+      border:1px solid #3a4b46;
+      border-radius:11px;
+      color:#f0f5f2;
+    }
+    #loginGate input:focus{
+      outline:none;
+      border-color:#4fc495;
+      box-shadow:0 0 0 3px rgba(79,196,149,.18);
+    }
+    #loginGate input::placeholder{ color:#5c6f68; }
+    .role-toggle-btn{
+      transition: all .2s ease;
+    }
+    .role-toggle-btn.is-active{
+      background:linear-gradient(90deg,#4fc495,#62d0a8);
+      color:#062019 !important;
+      box-shadow:0 8px 20px rgba(79,196,149,.25);
+    }
+    .role-toggle-btn:not(.is-active){
+      color:#91a19a;
+    }
+    .role-toggle-btn:not(.is-active):hover{
+      color:#f3f7f5;
+    }
+    .login-submit-btn{
+      background:linear-gradient(90deg,#4fc495,#62d0a8) !important;
+      color:#062019 !important;
+    }
+    .login-submit-btn:hover{
+      filter:brightness(1.06);
+    }
+    .feature-row-icon{
+      background:rgba(79,196,149,.12);
+      border:1px solid rgba(79,196,149,.3);
+    }
+  </style>
+</head>
+<body class="bg-[#030712] text-slate-100 min-h-screen flex flex-col antialiased selection:bg-emerald-500 selection:text-white">
+
+  <!-- ===================== LOGIN GATE ===================== -->
+  <div id="loginGate" class="fixed inset-0 z-[100] overflow-y-auto flex items-center justify-center p-4 sm:p-8">
+    <div class="grid-overlay absolute inset-0 pointer-events-none"></div>
+
+    <div class="w-full max-w-5xl grid grid-cols-1 lg:grid-cols-[1.05fr_1fr] rounded-3xl overflow-hidden border border-[#26352f] shadow-2xl shadow-black/60 bg-[#0b1613]/85 backdrop-blur-xl relative my-auto">
+
+      <!-- Brand / hero panel -->
+      <div class="relative p-8 sm:p-10 flex flex-col justify-between border-b lg:border-b-0 lg:border-r border-[#26352f] bg-[linear-gradient(160deg,rgba(79,196,149,.10),transparent_55%)]">
+        <div>
+          <div class="flex items-center space-x-3">
+            <div class="w-11 h-11 rounded-xl bg-gradient-to-tr from-emerald-600 via-teal-600 to-cyan-400 flex items-center justify-center shadow-lg shadow-emerald-500/25 text-white shrink-0">
+              <svg viewBox="0 0 24 24" fill="none" class="w-6 h-6" xmlns="http://www.w3.org/2000/svg">
+                <path d="M3 12.5h3.4l2-6.2 4.2 12.4 2-6.2h3.4" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                <circle cx="19.4" cy="12.5" r="1.5" fill="white"/>
+              </svg>
+            </div>
+            <div>
+              <h1 class="text-base font-extrabold tracking-tight text-white">Campus AI</h1>
+              <p class="text-[11px] text-slate-500 font-medium">Campus issue intelligence platform</p>
+            </div>
+          </div>
+
+          <h2 class="mt-9 text-3xl sm:text-[2.1rem] font-extrabold text-white leading-[1.15] tracking-tight">
+            SRM Institute of<br class="hidden sm:block"/> Science &amp; Technology
+          </h2>
+          <p class="text-xs font-mono uppercase tracking-[0.18em] text-emerald-400/90 mt-2">Kattankulathur Campus, Chennai</p>
+
+          <p class="mt-6 text-[13px] text-slate-400 leading-relaxed max-w-sm">
+            One secure gateway for reporting campus issues and for wardens &amp; administrators to triage them — backed by on-device anonymization and AI-driven severity scoring.
+          </p>
+        </div>
+
+        <div class="space-y-3.5 mt-10">
+          <div class="flex items-center gap-3">
+            <span class="feature-row-icon w-8 h-8 rounded-lg flex items-center justify-center text-sm shrink-0">🔒</span>
+            <p class="text-[12.5px] text-slate-300"><strong class="text-white font-semibold">Blinded identity</strong> — names & roll numbers never leave your device.</p>
+          </div>
+          <div class="flex items-center gap-3">
+            <span class="feature-row-icon w-8 h-8 rounded-lg flex items-center justify-center text-sm shrink-0">⚡</span>
+            <p class="text-[12.5px] text-slate-300"><strong class="text-white font-semibold">AI-prioritized queue</strong> — duplicate reports cluster automatically.</p>
+          </div>
+          <div class="flex items-center gap-3">
+            <span class="feature-row-icon w-8 h-8 rounded-lg flex items-center justify-center text-sm shrink-0">🗺️</span>
+            <p class="text-[12.5px] text-slate-300"><strong class="text-white font-semibold">Live severity map</strong> — wardens see hotspots the instant they form.</p>
+          </div>
+        </div>
+
+        <p class="text-[10px] font-mono text-slate-600 mt-10 tracking-wide">CAMPUS AI • CIVIC INFRASTRUCTURE INTELLIGENCE — BUILT BY URBANOVA</p>
+      </div>
+
+      <!-- Login card -->
+      <div class="p-8 sm:p-10 flex flex-col justify-center bg-[#0d1917]/60">
+        <div>
+          <h3 class="text-lg font-extrabold text-white">Sign in to continue</h3>
+          <p class="text-xs text-slate-500 mt-1 mb-5">Choose your role to see the right login form.</p>
+
+          <div class="flex bg-slate-900/70 border border-slate-800 rounded-xl p-1 mb-6 gap-1">
+            <button type="button" id="loginRoleStudentBtn" onclick="setLoginRole('student')" class="role-toggle-btn is-active flex-1 px-3 py-2 text-xs font-bold rounded-lg">
+              🎓 Student
+            </button>
+            <button type="button" id="loginRoleAdminBtn" onclick="setLoginRole('admin')" class="role-toggle-btn flex-1 px-3 py-2 text-xs font-bold rounded-lg">
+              🛡️ Warden / Administrator
+            </button>
+          </div>
+
+          <!-- STUDENT LOGIN -->
+          <form id="studentLoginForm" onsubmit="handleLogin(event,'student')" class="space-y-3.5">
+            <div>
+              <label class="block text-xs font-semibold text-slate-300 mb-1.5">Net ID or Registration Number</label>
+              <input id="studentLoginId" type="text" autocomplete="username" placeholder="e.g. netid2026 or RA2211003011234"
+                class="w-full px-3.5 py-2.5 text-xs transition" required />
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-slate-300 mb-1.5">Password</label>
+              <input id="studentLoginPass" type="password" autocomplete="current-password" placeholder="••••••••"
+                class="w-full px-3.5 py-2.5 text-xs transition" required />
+            </div>
+            <div id="studentLoginError" class="hidden text-[11.5px] text-rose-400 font-medium bg-rose-950/30 border border-rose-900/50 rounded-lg px-3 py-2"></div>
+            <button type="submit" class="login-submit-btn w-full py-3 font-bold text-xs rounded-xl transition active:scale-[0.99] flex items-center justify-center gap-2 tracking-wide">
+              Sign in as Student →
+            </button>
+            <p class="text-[10.5px] text-slate-500 leading-relaxed">
+              This login opens the Student Portal only — the Warden &amp; Admin Console and Inter-Uni Governance tools are not accessible from a student account.
+            </p>
+          </form>
+
+          <!-- WARDEN / ADMIN LOGIN -->
+          <form id="adminLoginForm" onsubmit="handleLogin(event,'admin')" class="space-y-3.5 hidden">
+            <div>
+              <label class="block text-xs font-semibold text-slate-300 mb-1.5">Employee ID or Institutional Email</label>
+              <input id="adminLoginId" type="text" autocomplete="username" placeholder="e.g. warden.adhiyaman@srmist.edu.in"
+                class="w-full px-3.5 py-2.5 text-xs transition" required />
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-slate-300 mb-1.5">Password</label>
+              <input id="adminLoginPass" type="password" autocomplete="current-password" placeholder="••••••••"
+                class="w-full px-3.5 py-2.5 text-xs transition" required />
+            </div>
+            <div id="adminLoginError" class="hidden text-[11.5px] text-rose-400 font-medium bg-rose-950/30 border border-rose-900/50 rounded-lg px-3 py-2"></div>
+            <button type="submit" class="login-submit-btn w-full py-3 font-bold text-xs rounded-xl transition active:scale-[0.99] flex items-center justify-center gap-2 tracking-wide">
+              Sign in as Warden / Admin →
+            </button>
+            <p class="text-[10.5px] text-slate-500 leading-relaxed">
+              Reserved for verified hostel wardens, facility heads &amp; campus administration staff of SRMIST Kattankulathur.
+            </p>
+          </form>
+
+          <div class="mt-6">
+            <button type="button" onclick="document.getElementById('demoNoticeBox').classList.toggle('hidden')" class="text-[10.5px] text-slate-600 hover:text-slate-400 font-mono transition flex items-center gap-1">
+              ⓘ About this demo build
+            </button>
+            <div id="demoNoticeBox" class="hidden mt-2 p-3 bg-[#060c18] border border-slate-800 rounded-xl text-[10.5px] text-slate-500 font-mono leading-relaxed">
+              Prototype build: any Net ID/Employee ID + password (4+ characters) will sign you in as that role for demo purposes. Warden/Admin sign-in still requires a recognized institutional email domain.
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Header / Navigation Bar -->
+  <header id="appHeader" class="hidden border-b border-slate-800/80 bg-[#060d1d]/90 backdrop-blur-md sticky top-0 z-50 px-4 sm:px-8 py-3.5 flex flex-wrap items-center justify-between gap-4">
+    <div class="flex items-center space-x-3.5">
+      <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-emerald-600 via-teal-600 to-cyan-400 flex items-center justify-center shadow-lg shadow-emerald-500/25 text-white shrink-0">
+        <svg viewBox="0 0 24 24" fill="none" class="w-5.5 h-5.5" xmlns="http://www.w3.org/2000/svg">
+          <path d="M3 12.5h3.4l2-6.2 4.2 12.4 2-6.2h3.4" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          <circle cx="19.4" cy="12.5" r="1.5" fill="white"/>
+        </svg>
+      </div>
+      <div>
+        <h1 class="text-lg font-extrabold tracking-tight text-white">Campus AI</h1>
+        <p class="text-xs text-slate-400 font-medium">Campus issue intelligence • privacy-first reporting • action prioritization</p>
+      </div>
+    </div>
+
+    <!-- Tenant & View Controls -->
+    <div class="flex flex-wrap items-center gap-3">
+      
+      <!-- Direct SOS Call Trigger Button -->
+      <button onclick="handleDirectSOSCall()" class="flex items-center space-x-1.5 px-3 py-1.5 bg-rose-600/20 hover:bg-rose-600/30 border border-rose-500/50 text-rose-300 text-xs font-bold rounded-xl transition pulse-rapid shadow-lg shadow-rose-950/40">
+        <span>🚨 Inform Authorities / SOS</span>
+      </button>
+
+      <div id="tenantSelectorWrap" class="hidden flex items-center space-x-1.5 bg-slate-900/90 px-3 py-1.5 rounded-xl border border-slate-800 text-xs">
+        <span class="text-slate-400 font-medium">🏛️ Institution:</span>
+        <select id="tenantSelector" onchange="handleTenantChange(this.value)" class="bg-transparent font-semibold text-emerald-400 focus:outline-none cursor-pointer">
+          <option value="srmist">SRMIST (Kattankulathur, Chennai)</option>
+          <option value="iitm">IIT Madras (Chennai)</option>
+          <option value="vit">VIT (Vellore Campus)</option>
+        </select>
+      </div>
+
+      <div class="flex bg-slate-900/90 p-1 rounded-xl border border-slate-800">
+        <button id="tabStudentBtn" onclick="switchTab('student')" class="px-3.5 py-1.5 text-xs font-semibold rounded-lg transition bg-emerald-600 text-white shadow-md shadow-emerald-600/30">
+          Student Portal
+        </button>
+        <button id="tabAdminBtn" onclick="switchTab('admin')" class="hidden px-3.5 py-1.5 text-xs font-semibold rounded-lg transition text-slate-400 hover:text-white">
+          Warden & Admin Console
+        </button>
+        <button id="tabMacroBtn" onclick="switchTab('macro')" class="hidden px-3.5 py-1.5 text-xs font-semibold rounded-lg transition text-slate-400 hover:text-white">
+          Inter-Uni Governance
+        </button>
+      </div>
+
+      <button id="demoInfluxBtn" onclick="injectSimulatedBatch(true)" class="hidden md:flex items-center space-x-1.5 px-3.5 py-1.5 bg-gradient-to-r from-emerald-500/20 to-cyan-500/20 hover:from-emerald-500/30 hover:to-cyan-500/30 border border-emerald-500/30 text-emerald-300 text-xs font-semibold rounded-xl transition">
+        <span>⚡ Demo Influx</span>
+      </button>
+
+      <div id="userChip" class="hidden items-center gap-2 bg-slate-900/90 px-3 py-1.5 rounded-xl border border-slate-800 text-xs">
+        <span class="w-2 h-2 rounded-full bg-emerald-400 pulse-slow"></span>
+        <span id="userChipName" class="font-semibold text-white"></span>
+        <span id="userChipRole" class="font-mono text-[9.5px] px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-300 border border-emerald-500/30"></span>
+        <button onclick="handleLogout()" class="ml-1 text-slate-400 hover:text-rose-400 font-semibold transition">Logout</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Non-blocking Toast Notification -->
+  <div id="toastNotification" class="fixed bottom-6 right-6 z-50 transform transition-all duration-300 translate-y-20 opacity-0 pointer-events-none bg-[#091122]/95 border border-emerald-500/40 text-white px-4 py-3 rounded-xl shadow-2xl shadow-emerald-500/20 text-xs flex items-center gap-2.5 backdrop-blur-md">
+    <span class="text-base" id="toastIcon">⚡</span>
+    <span id="toastMessage" class="font-medium">Cross-Campus Demo Telemetry Injected</span>
+  </div>
+
+  <!-- Emergency Dispatch Modal -->
+  <div id="emergencyModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm hidden p-4">
+    <div class="bg-[#121c1a] border border-rose-500/40 rounded-2xl max-w-lg w-full p-6 shadow-2xl text-slate-100 space-y-4">
+      <div class="flex items-center justify-between border-b border-rose-500/20 pb-3">
+        <div class="flex items-center space-x-2">
+          <span class="text-2xl">🚨</span>
+          <h3 class="text-lg font-extrabold text-white">Emergency Campus Authorities Hotline</h3>
+        </div>
+        <button onclick="closeEmergencyModal()" class="text-slate-400 hover:text-white text-lg font-bold">✕</button>
+      </div>
+
+      <p class="text-xs text-slate-300 leading-relaxed">
+        Immediate response line for medical emergencies, active fires, physical threats, or urgent life safety issues on campus.
+      </p>
+
+      <div id="emergencyAutoBanner" class="hidden p-2.5 bg-rose-900/40 border border-rose-700/60 rounded-lg text-[11px] text-rose-200 font-semibold"></div>
+
+      <div id="emergencyContactsList" class="space-y-2.5"></div>
+
+      <div class="p-3 bg-rose-950/40 border border-rose-900/60 rounded-xl text-xs text-rose-300 flex items-center justify-between">
+        <span>Direct 24/7 National Emergency Hotline:</span>
+        <a href="tel:112" class="px-3 py-1 bg-rose-600 text-white font-bold rounded-lg text-xs hover:bg-rose-500">Dial 112</a>
+      </div>
+
+      <div class="flex justify-end pt-2">
+        <button onclick="closeEmergencyModal()" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-xs font-semibold rounded-xl text-slate-200">
+          Close
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Live Camera Capture Modal -->
+  <div id="cameraModal" class="fixed inset-0 z-[60] flex items-center justify-center bg-black/90 backdrop-blur-sm hidden p-4">
+    <div class="bg-[#0c1614] border border-[#2b3d37] rounded-2xl max-w-lg w-full p-5 shadow-2xl text-slate-100 space-y-3.5">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+        <div class="flex items-center space-x-2">
+          <span class="text-xl">📸</span>
+          <h3 class="text-base font-extrabold text-white">Live Camera Capture</h3>
+        </div>
+        <button onclick="closeCameraCapture()" class="text-slate-400 hover:text-white text-lg font-bold">✕</button>
+      </div>
+
+      <div class="relative rounded-xl overflow-hidden bg-black border border-slate-800">
+        <video id="cameraLiveVideo" autoplay playsinline class="w-full h-72 object-cover bg-black"></video>
+        <div id="cameraErrorOverlay" class="hidden absolute inset-0 flex items-center justify-center p-4 text-center text-xs text-rose-300 bg-black/80"></div>
+      </div>
+      <canvas id="cameraCaptureCanvas" class="hidden"></canvas>
+
+      <div class="flex justify-end gap-2.5 pt-1">
+        <button type="button" onclick="closeCameraCapture()" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-xs font-semibold rounded-xl text-slate-200">
+          Cancel
+        </button>
+        <button type="button" onclick="captureFromCamera()" class="px-5 py-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-xs font-bold rounded-xl text-white shadow-lg shadow-emerald-600/30">
+          📷 Capture Photo
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Container -->
+  <main id="appMain" class="hidden flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8">
+
+    <!-- 1. STUDENT REPORTING TAB -->
+    <section id="studentTab" class="max-w-3xl mx-auto space-y-6">
+      <div class="bg-[#091122]/90 border border-slate-800/90 rounded-2xl p-6 sm:p-8 shadow-2xl backdrop-blur-sm">
+        
+        <div class="flex items-center justify-between mb-5 border-b border-slate-800/80 pb-4">
+          <div>
+            <div class="text-[10px] font-mono font-semibold uppercase tracking-[0.18em] text-[#23836a] mb-2">STUDENT → CAMPUS OPERATIONS</div>
+            <h2 class="text-2xl sm:text-3xl font-extrabold text-white flex items-center gap-2">
+              <span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span> Report an issue. Let CampusAI prioritize it.
+            </h2>
+            <p class="text-xs text-slate-400 mt-0.5">Automated NLP severity inference & dynamic Campus AI score evaluation</p>
+          </div>
+          <span class="text-[10px] font-mono font-medium px-2.5 py-1 rounded-full bg-emerald-950/80 text-emerald-300 border border-emerald-800/60 flex items-center gap-1">
+            🔒 Blinded Token
+          </span>
+        </div>
+
+        <!-- Privacy Shield Info -->
+        <div class="p-3.5 bg-[#060c18] border border-slate-800 rounded-xl mb-5 text-xs text-slate-400 space-y-1.5">
+          <div class="flex justify-between items-center text-[11px] text-slate-300 font-mono">
+            <span>Cryptographic Pseudonym:</span>
+            <span id="blindedHashBadge" class="text-emerald-400 font-bold bg-emerald-950/40 px-2 py-0.5 rounded border border-emerald-800/40">Verified Resident #7A8F</span>
+          </div>
+          <p class="text-[10.5px] leading-relaxed text-slate-400">
+            Institutional verification is decoupled from your student roll number. Names, phone numbers, private room references, and photo metadata are automatically sanitized on-device.
+          </p>
+        </div>
+
+        <form id="reportForm" onsubmit="handleStudentSubmit(event)" class="space-y-4">
+          
+          <!-- Category-Wise Grouped Landmark Dropdown -->
+          <div>
+            <label class="block text-xs font-semibold text-slate-300 mb-1.5">Campus Landmark / Zone</label>
+            <select id="locationInput" class="w-full bg-[#040814] border border-slate-700/80 rounded-xl px-3.5 py-2.5 text-xs text-slate-100 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition">
+              <!-- Grouped dynamically by category via populateLocationDropdown() -->
+            </select>
+          </div>
+
+          <!-- Domain Category -->
+          <div>
+            <label class="block text-xs font-semibold text-slate-300 mb-1.5">Domain Category</label>
+            <select id="categoryInput" class="w-full bg-[#040814] border border-slate-700/80 rounded-xl px-3.5 py-2.5 text-xs text-slate-100 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition">
+              <option value="Electrical & Fire Safety">⚡ Electrical, Fire Safety & Power Hazards</option>
+              <option value="Sanitation & Water Supply">🚰 Sanitation, Water Shortage & Plumbing</option>
+              <option value="Hostel & Pest Control">🛏️ Hostel Living, Pest Control & Hygiene</option>
+              <option value="Mess & Food Safety">🍲 Mess, Dining Hall & Food Quality</option>
+              <option value="Campus Transit & Mobility">🚌 Campus Shuttles, EV Buggies & Parking</option>
+              <option value="Internet & IT Lab Services">💻 Wi-Fi, LMS Portal & Lab Computers</option>
+              <option value="Civil Infrastructure & Elevators">🏢 Elevators, Doors, Windows & Structural</option>
+              <option value="Campus Safety & Night Lighting">🔦 Night Lighting, Security & SOS Watch</option>
+              <option value="Academic & Classroom Facilities">📚 Projectors, Audio-Visual & Classroom AC</option>
+              <option value="Mental Health & Student Support">🧠 Mental Health & Wellness Support</option>
+              <option value="Noise & Quiet Study Zones">🔇 Noise Disturbance & Study Discipline</option>
+              <option value="Waste & Sustainability">♻️ Waste Management & Sustainability</option>
+            </select>
+          </div>
+
+          <!-- Multi-Factor Form Additions: Days Unresolved & Impact Scope -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-xs font-semibold text-slate-300 mb-1.5">How long has this been unresolved?</label>
+              <select id="daysUnresolvedInput" class="w-full bg-[#040814] border border-slate-700/80 rounded-xl px-3.5 py-2.5 text-xs text-slate-100 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition">
+                <option value="1">Just happened / 1 day</option>
+                <option value="3">2 – 3 days unresolved</option>
+                <option value="7">4 – 7 days unresolved</option>
+                <option value="15">1 – 2 weeks (8 – 15 days)</option>
+                <option value="25">Over 15+ days (Chronic / Critical Delay)</option>
+                <option value="30">Over 30+ days (Chronic Neglect)</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-slate-300 mb-1.5">Estimated Impacted Population</label>
+              <select id="impactScopeInput" class="w-full bg-[#040814] border border-slate-700/80 rounded-xl px-3.5 py-2.5 text-xs text-slate-100 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition">
+                <option value="2">Isolated Room / Individual (1–3 students)</option>
+                <option value="35">Corridor / Floor Wing (~20–50 students)</option>
+                <option value="250">Entire Block / Large Facility (100–500+ students)</option>
+                <option value="1500">Major Campus Landmark / High Footfall (1000+ students)</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Summary Title (Optional if photo attached) -->
+          <div>
+            <label class="block text-xs font-semibold text-slate-300 mb-1.5">
+              Summary Title <span class="text-slate-500 font-normal font-mono">(Optional if photo attached)</span>
+            </label>
+            <input id="titleInput" type="text" placeholder="e.g. Room not cleaned for 30+ days or switch sparking"
+              class="w-full bg-[#040814] border border-slate-700/80 rounded-xl px-3.5 py-2.5 text-xs text-slate-100 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 placeholder:text-slate-600 transition" />
+          </div>
+
+          <!-- Photo/Video Upload or Camera Capture -->
+          <div class="p-3.5 bg-[#0c1614] border border-[#2b3d37] rounded-xl space-y-2.5">
+            <div class="flex justify-between items-center">
+              <label class="text-xs font-semibold text-slate-200 flex items-center gap-1.5">
+                <span>📷</span> Photo / Video Evidence (Upload or Capture)
+              </label>
+              <span class="text-[10px] text-slate-400 font-mono">Optional • Strips EXIF GPS metadata</span>
+            </div>
+
+            <!-- Hidden File Input (used for the Upload button, and as a fallback if getUserMedia is unavailable) -->
+            <input type="file" id="fileUploadInput" accept="image/*,video/*" class="hidden" onchange="handleMediaSelection(event)">
+
+            <div class="flex flex-wrap items-center gap-2.5">
+              <button type="button" onclick="openCameraCapture()" class="px-3.5 py-2 bg-slate-800/90 hover:bg-slate-700/90 border border-slate-600 text-slate-200 text-xs font-semibold rounded-xl flex items-center gap-1.5 transition">
+                <span>📸 Capture with Camera</span>
+              </button>
+              <button type="button" onclick="document.getElementById('fileUploadInput').click()" class="px-3.5 py-2 bg-slate-800/90 hover:bg-slate-700/90 border border-slate-600 text-slate-200 text-xs font-semibold rounded-xl flex items-center gap-1.5 transition">
+                <span>📁 Upload Photo/Video from Device</span>
+              </button>
+            </div>
+
+            <!-- Photo/Video Preview Area -->
+            <div id="photoPreviewBox" class="hidden relative inline-block mt-2 border border-emerald-500/40 rounded-xl overflow-hidden shadow-lg bg-black/40 p-1">
+              <img id="uploadedPhotoPreview" src="" alt="Incident Preview" class="h-28 w-auto rounded-lg object-cover">
+              <video id="uploadedVideoPreview" class="hidden h-28 w-auto rounded-lg object-cover" controls muted></video>
+              <button type="button" onclick="removeAttachedPhoto()" class="absolute top-2 right-2 bg-rose-600/90 hover:bg-rose-500 text-white rounded-full p-1 text-xs w-6 h-6 flex items-center justify-center font-bold shadow">
+                ✕
+              </button>
+              <div class="text-[9.5px] font-mono text-emerald-400 px-1 pt-1">✓ Attached & Sanitized (Description optional)</div>
+            </div>
+
+            <!-- AI Vision Analysis Status -->
+            <div id="aiAnalysisBox" class="hidden p-2.5 bg-[#02050c] border border-slate-800 rounded-lg text-[11px] space-y-1">
+              <div id="aiAnalysisStatusLine" class="flex items-center gap-1.5 text-cyan-400 font-mono">
+                <span class="w-1.5 h-1.5 rounded-full bg-cyan-400 pulse-slow"></span> Running Gemini Vision analysis...
+              </div>
+              <div id="aiAnalysisResultLine" class="text-slate-300 hidden"></div>
+            </div>
+          </div>
+
+          <!-- Description (NON-COMPULSORY / OPTIONAL WHEN PHOTO ATTACHED) -->
+          <div>
+            <div class="flex justify-between items-center mb-1.5">
+              <label class="text-xs font-semibold text-slate-300">
+                Detailed Description <span class="text-slate-500 font-normal font-mono" id="descOptionalHint">(Optional with photo)</span>
+              </label>
+              <span class="text-[10px] text-cyan-400 font-mono">Live On-Device Anonymizer</span>
+            </div>
+            <textarea id="descInput" rows="3" oninput="previewSanitization(this.value)" placeholder="Optional when photo is uploaded. Provide extra details if needed..."
+              class="w-full bg-[#040814] border border-slate-700/80 rounded-xl px-3.5 py-2.5 text-xs text-slate-100 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 placeholder:text-slate-600 transition"></textarea>
+            
+            <div id="sanitizationPreviewBox" class="mt-2 p-2.5 bg-[#02050c] border border-slate-800 rounded-lg text-[11px] text-slate-400 font-mono hidden">
+              <span class="text-slate-500 block text-[9.5px] uppercase">Payload Anonymization Preview:</span>
+              <span id="sanitizedTextOutput" class="text-slate-300"></span>
+            </div>
+          </div>
+
+          <!-- Urgent Emergency Escalation Checkbox -->
+          <div class="p-3.5 bg-rose-950/20 border border-rose-800/40 rounded-xl flex items-start gap-3">
+            <input type="checkbox" id="emergencyEscalateCheck" class="mt-0.5 w-4 h-4 rounded text-rose-600 focus:ring-rose-500 bg-[#040814] border-rose-700 cursor-pointer">
+            <div class="text-xs">
+              <label for="emergencyEscalateCheck" class="font-bold text-rose-300 cursor-pointer flex items-center gap-1.5">
+                <span>🚨 Direct Emergency Escalation</span>
+                <span class="text-[10px] font-mono px-1.5 py-0.2 rounded bg-rose-900/60 border border-rose-700">Immediate Alert</span>
+              </label>
+              <p class="text-slate-400 text-[11px] mt-0.5">
+                Flags this incident directly to campus quick-response dispatch & campus authorities with max priority.
+              </p>
+            </div>
+          </div>
+
+          <button type="submit" class="w-full py-3.5 bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-600 hover:from-emerald-500 hover:to-teal-500 active:scale-[0.99] font-bold text-xs rounded-xl shadow-lg shadow-emerald-600/30 text-white transition flex items-center justify-center gap-2 tracking-wide">
+            <span>Submit securely → Compute CampusAI Score</span>
+          </button>
+        </form>
+
+        <div id="studentNotification" class="hidden mt-5 p-4 bg-emerald-950/60 border border-emerald-800/80 rounded-xl text-xs text-emerald-200"></div>
+      </div>
+    </section>
+
+    <!-- 2. WARDEN & ADMIN CONSOLE -->
+    <section id="adminTab" class="hidden space-y-6">
+      
+      <!-- Top Operational Metrics -->
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div class="bg-[#111b19] border border-[#30413b] p-4 rounded-2xl shadow-lg">
+          <div class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Tenant Raw Pings</div>
+          <div id="statRawReports" class="text-2xl font-extrabold text-white mt-1 font-mono">0</div>
+          <div class="text-[11px] text-slate-500 mt-1 font-medium">Decoupled anonymous tickets</div>
+        </div>
+
+        <div class="bg-[#111b19] border border-[#30413b] p-4 rounded-2xl shadow-lg">
+          <div class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">AI Clustered Incidents</div>
+          <div id="statClusters" class="text-2xl font-extrabold text-emerald-400 mt-1 font-mono">0</div>
+          <div class="text-[11px] text-slate-500 mt-1 font-medium">Grouped root causes</div>
+        </div>
+
+        <div class="bg-[#111b19] border border-[#30413b] p-4 rounded-2xl shadow-lg">
+          <div class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Noise Reduction</div>
+          <div id="statNoiseReduction" class="text-2xl font-extrabold text-emerald-400 mt-1 font-mono">0%</div>
+          <div class="text-[11px] text-slate-500 mt-1 font-medium">Duplicate overhead saved</div>
+        </div>
+
+        <div class="bg-[#111b19] border border-[#30413b] p-4 rounded-2xl shadow-lg">
+          <div class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">High Escalation (≥75)</div>
+          <div id="statCritical" class="text-2xl font-extrabold text-rose-500 mt-1 font-mono">0</div>
+          <div class="text-[11px] text-slate-500 mt-1 font-medium">Campus AI Score &ge; 75/100</div>
+        </div>
+      </div>
+
+      <!-- Action Queue & Heatmap (Top Row) -->
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        
+        <!-- Prioritized Cluster Action Queue -->
+        <div class="lg:col-span-7 bg-[#111b19] border border-[#30413b] rounded-2xl p-6 shadow-2xl flex flex-col">
+          <div class="flex items-center justify-between mb-4">
+            <h2 class="text-base font-bold text-white flex items-center gap-2">
+              <span class="w-2.5 h-2.5 rounded-full bg-rose-500"></span> AI Prioritized Facility Action Queue
+            </h2>
+            <div class="text-xs text-slate-400 font-mono">Ranked by Campus AI Score (0-100)</div>
+          </div>
+
+          <div id="clusterQueueContainer" class="space-y-3.5 overflow-y-auto max-h-[480px] custom-scrollbar pr-1 flex-1"></div>
+        </div>
+
+        <!-- Campus Interactive Map -->
+        <div id="adminMapCard" class="lg:col-span-5 bg-[#111b19] border border-[#30413b] rounded-2xl p-4 shadow-2xl flex flex-col">
+          <div class="flex items-center justify-between mb-3 px-2">
+            <h2 class="text-base font-bold text-white">Geospatial Severity Map</h2>
+            <span id="mapTenantTag" class="text-[10px] font-mono text-slate-400">SRMIST KTR Campus</span>
+          </div>
+          <div id="map" class="w-full h-[450px] rounded-xl border border-slate-800 overflow-hidden shadow-inner"></div>
+        </div>
+      </div>
+
+      <!-- Verified Student Telemetry Stream (Inside Warden Console) -->
+      <div class="bg-[#111b19] border border-[#30413b] rounded-2xl p-6 shadow-2xl backdrop-blur-sm">
+        <div class="flex items-center justify-between mb-4 border-b border-[#30413b] pb-3">
+          <div>
+            <h2 class="text-base font-bold text-white flex items-center gap-2">
+              <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 pulse-slow"></span> Live Verified Telemetry Ingestion Stream
+            </h2>
+            <p class="text-xs text-slate-400" id="currentTenantSubtitle">Showing real-time individual student pings with photos & aging data</p>
+          </div>
+          <span id="liveCountBadge" class="text-[11px] bg-slate-900 border border-slate-800 px-3 py-1 rounded-full text-slate-300 font-mono font-medium">
+            0 Pings
+          </span>
+        </div>
+
+        <div id="recentReportsList" class="space-y-3 overflow-y-auto max-h-[400px] custom-scrollbar pr-1"></div>
+      </div>
+    </section>
+
+    <!-- 3. INTER-UNIVERSITY MACRO GOVERNANCE TAB -->
+    <section id="macroTab" class="hidden space-y-6">
+      <div class="bg-[#111b19] border border-slate-800/90 rounded-2xl p-6 shadow-2xl backdrop-blur-sm">
+        <div class="flex flex-wrap items-center justify-between gap-4 mb-6">
+          <div>
+            <h2 class="text-lg font-bold text-white">Inter-University Governance & Infrastructure Health Index</h2>
+            <p class="text-xs text-slate-400">Higher Education Macro Analytics • Aggregated SDGs & MTTR Benchmarks</p>
+          </div>
+          <span class="px-3 py-1 bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-xs font-mono rounded-lg">
+            Federation Network: 3 Active Universities
+          </span>
+        </div>
+
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-xs">
+            <thead class="bg-slate-900/80 text-slate-400 uppercase text-[10px] font-mono tracking-wider">
+              <tr>
+                <th class="p-3.5 rounded-l-xl">Institution</th>
+                <th class="p-3.5">Campus Population</th>
+                <th class="p-3.5">Total Raw Incidents</th>
+                <th class="p-3.5">Unique AI Clusters</th>
+                <th class="p-3.5">Noise Reduction</th>
+                <th class="p-3.5">MTTR (Avg Resolution)</th>
+                <th class="p-3.5 rounded-r-xl">Infrastructure Health Score</th>
+              </tr>
+            </thead>
+            <tbody id="macroTableBody" class="divide-y divide-slate-800 text-slate-200"></tbody>
+          </table>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
+          <div class="bg-[#060c18] border border-slate-800 p-4 rounded-xl">
+            <span class="text-xs font-mono text-cyan-400 font-semibold">SDG 11: Sustainable Cities</span>
+            <p class="text-[11px] text-slate-400 mt-1">Cross-campus resource prioritization reduced unresolved municipal & sanitary hazards by 42% over previous quarters.</p>
+          </div>
+          <div class="bg-[#060c18] border border-slate-800 p-4 rounded-xl">
+            <span class="text-xs font-mono text-emerald-400 font-semibold">SDG 9: Smarter Infrastructure</span>
+            <p class="text-[11px] text-slate-400 mt-1">Automated issue deduplication saves facility teams ~18 hours per week in redundant ticket triage across campus networks.</p>
+          </div>
+          <div class="bg-[#060c18] border border-slate-800 p-4 rounded-xl">
+            <span class="text-xs font-mono text-emerald-400 font-semibold">Zero-Knowledge Trust Index</span>
+            <p class="text-[11px] text-slate-400 mt-1">Student reporting participation increased by 68% for safety & hygiene issues following cryptographic anonymity integration.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <footer id="appFooter" class="hidden max-w-7xl w-full mx-auto px-6 pb-8 pt-2">
+    <div class="border-t border-[#dbe4de] pt-5 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs">
+      <span class="font-mono tracking-[0.18em] uppercase text-[#81918a]">CampusAI • Civic Infrastructure Intelligence</span>
+      <span class="font-semibold text-[#64756e]">Built by <strong class="text-[#17624e]">Urbanova</strong></span>
+    </div>
+  </footer>
+
+  <script>
+    const UNIVERSITIES = {
+      srmist: {
+        id: 'srmist',
+        name: 'SRM Institute of Science & Technology (SRMIST)',
+        campusTag: 'Kattankulathur, Chennai',
+        domain: 'srmist.edu.in',
+        mapCenter: [12.8228, 80.0450],
+        zoom: 16,
+        population: 52000,
+        emergencyContacts: [
+          { role: 'Campus Security Control Room', phone: '+9104427453500' },
+          { role: 'SRM Global Hospitals (Emergency)', phone: '+9104447432345' },
+          { role: 'Hostel Chief Warden Office', phone: '+9104427417000' },
+          { role: 'Campus Electrical & Fire Safety', phone: '+919840001122' }
+        ],
+        locations: {
+          'University Building (UB)': { lat: 12.8231, lng: 80.0442, type: 'Academic', baseVulnerability: 9, defaultPopulation: 4500 },
+          'Tech Park 1': { lat: 12.824845, lng: 80.045051, type: 'Academic & Labs', baseVulnerability: 9, defaultPopulation: 3000 },
+          'Tech Park 2': { lat: 12.824975, lng: 80.045958, type: 'Academic & Research', baseVulnerability: 9, defaultPopulation: 3000 },
+          'College of Architecture': { lat: 12.824198, lng: 80.043727, type: 'Design Studios', baseVulnerability: 8, defaultPopulation: 1200 },
+          'Central Library': { lat: 12.8239, lng: 80.0435, type: 'Study Hub', baseVulnerability: 7, defaultPopulation: 2200 },
+          'Dr. T. P. Ganesan Auditorium': { lat: 12.8219, lng: 80.0428, type: 'Auditorium', baseVulnerability: 8, defaultPopulation: 4000 },
+          'Vendhar Square': { lat: 12.824122, lng: 80.045729, type: 'Plaza & Food Court', baseVulnerability: 8, defaultPopulation: 5000 },
+          'Adhiyaman Hostel': { lat: 12.821412, lng: 80.043623, type: 'Residential', baseVulnerability: 10, defaultPopulation: 1100 },
+          'Agasthiyar Hostel': { lat: 12.820783, lng: 80.043615, type: 'Residential', baseVulnerability: 10, defaultPopulation: 1000 },
+          'Manoranjitham Hostel': { lat: 12.820578, lng: 80.044004, type: 'Residential', baseVulnerability: 10, defaultPopulation: 850 },
+          'Nelson Mandela Hostel': { lat: 12.821127, lng: 80.043619, type: 'Residential', baseVulnerability: 10, defaultPopulation: 1200 },
+          'Oori Hostel': { lat: 12.821788, lng: 80.043490, type: 'Residential', baseVulnerability: 10, defaultPopulation: 950 },
+          'Kaari Hostel': { lat: 12.822137, lng: 80.043536, type: 'Residential', baseVulnerability: 10, defaultPopulation: 950 },
+          'M-Block Hostel': { lat: 12.820751, lng: 80.046188, type: 'Residential', baseVulnerability: 10, defaultPopulation: 1300 },
+          'N-Block Hostel': { lat: 12.820759, lng: 80.046813, type: 'Residential', baseVulnerability: 10, defaultPopulation: 1400 },
+          'Java Hostel Block': { lat: 12.8272, lng: 80.0430, type: 'Residential & Mess', baseVulnerability: 9, defaultPopulation: 900 },
+          'SRM Global Hospitals': { lat: 12.823050, lng: 80.048493, type: 'Hospital', baseVulnerability: 10, defaultPopulation: 2500 },
+          'SRM Medical College': { lat: 12.820898, lng: 80.048187, type: 'Medical College', baseVulnerability: 10, defaultPopulation: 2000 },
+          'SRM Dental College': { lat: 12.825376, lng: 80.047327, type: 'Dental Sciences', baseVulnerability: 8, defaultPopulation: 1500 }
+        }
+      },
+      iitm: {
+        id: 'iitm',
+        name: 'Indian Institute of Technology Madras (IITM)',
+        campusTag: 'Adyar, Chennai',
+        domain: 'iitm.ac.in',
+        mapCenter: [12.9915, 80.2337],
+        zoom: 15,
+        population: 13500,
+        emergencyContacts: [
+          { role: 'IITM Security Main Gate', phone: '+9104422578280' },
+          { role: 'Institute Hospital / Ambulance', phone: '+9104422578333' },
+          { role: 'Hostel Management Office', phone: '+9104422578500' }
+        ],
+        locations: {
+          'Central Lecture Theatre (CLT)': { lat: 12.9902, lng: 80.2301, type: 'Academic', baseVulnerability: 9, defaultPopulation: 1500 },
+          'Building Sciences Block (BSB)': { lat: 12.9918, lng: 80.2325, type: 'Engineering & Labs', baseVulnerability: 8, defaultPopulation: 1200 },
+          'Ganga Hostel': { lat: 12.9868, lng: 80.2372, type: 'Residential', baseVulnerability: 10, defaultPopulation: 750 },
+          'Jamuna Hostel': { lat: 12.9859, lng: 80.2381, type: 'Residential', baseVulnerability: 10, defaultPopulation: 700 },
+          'Mahanadhi Hostel': { lat: 12.9845, lng: 80.2365, type: 'Residential', baseVulnerability: 10, defaultPopulation: 800 },
+          'IITM Research Park': { lat: 12.9958, lng: 80.2422, type: 'Incubation & Labs', baseVulnerability: 9, defaultPopulation: 3500 },
+          'Central Library IITM': { lat: 12.9910, lng: 80.2340, type: 'Study Hub', baseVulnerability: 7, defaultPopulation: 1600 },
+          'Himalaya Food Court': { lat: 12.9875, lng: 80.2355, type: 'Dining & Student Hub', baseVulnerability: 8, defaultPopulation: 2500 }
+        }
+      },
+      vit: {
+        id: 'vit',
+        name: 'Vellore Institute of Technology (VIT)',
+        campusTag: 'Katpadi, Vellore',
+        domain: 'vit.ac.in',
+        mapCenter: [12.9692, 79.1559],
+        zoom: 15,
+        population: 38000,
+        emergencyContacts: [
+          { role: 'VIT Security Control Room', phone: '+9104162202111' },
+          { role: 'VIT Health Centre & Ambulance', phone: '+9104162202122' },
+          { role: 'Hostel Main Office', phone: '+9104162202500' }
+        ],
+        locations: {
+          'Technology Tower (TT)': { lat: 12.9715, lng: 79.1595, type: 'Academic & Labs', baseVulnerability: 9, defaultPopulation: 4000 },
+          'Silver Jubilee Tower (SJT)': { lat: 12.9722, lng: 79.1635, type: 'Academic', baseVulnerability: 9, defaultPopulation: 4500 },
+          'Men Hostel Block D': { lat: 12.9680, lng: 79.1560, type: 'Residential', baseVulnerability: 10, defaultPopulation: 1100 },
+          'Men Hostel Block K': { lat: 12.9665, lng: 79.1545, type: 'Residential', baseVulnerability: 10, defaultPopulation: 1200 },
+          'Ladies Hostel Block A': { lat: 12.9702, lng: 79.1530, type: 'Residential', baseVulnerability: 10, defaultPopulation: 900 },
+          'Anna Auditorium': { lat: 12.9708, lng: 79.1585, type: 'Auditorium', baseVulnerability: 8, defaultPopulation: 2800 },
+          'Foodys Central Canteen': { lat: 12.9698, lng: 79.1572, type: 'Dining Plaza', baseVulnerability: 8, defaultPopulation: 3200 }
+        }
+      }
+    };
+
+    let currentTenant = 'srmist';
+    let attachedPhotoBase64 = null;
+    let attachedMediaMimeType = null;
+    let lastAIAnalysis = null; // populated by analyzeMediaWithGemini() once a scan completes
+
+    // ============================================================
+    // GEMINI VISION CONFIG
+    // Get a free key at https://aistudio.google.com/apikey and paste it below.
+    // NOTE (important for a class demo): if you add "Website restrictions" to
+    // this key in Google Cloud Console, opening this file as file:// or from
+    // an unlisted origin will make every request fail with a 403, and the
+    // code below will silently fall back to text-only scoring. Either leave
+    // the key unrestricted for the demo, or add your exact hosting URL.
+    // ============================================================
+    const GEMINI_API_KEY = ''; // Keep credentials out of this public client-side file.
+    const GEMINI_MODEL = 'gemini-3.1-flash-lite'; // current-gen, low-latency, multimodal (image/video/audio/PDF)
+    const GEMINI_ENDPOINT = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`;
+
+    // Thresholds that decide when authorities get auto-notified vs. a normal ticket
+    const AUTO_ESCALATION_SCORE_THRESHOLD = 82; // CampusAI score at/above this = treated as critical
+    const AI_CRITICAL_SEVERITY = 5;              // AI-assigned severity 5/5 always counts as critical
+
+    let tenantData = {
+      srmist: { rawReports: [], clusters: [] },
+      iitm: { rawReports: [], clusters: [] },
+      vit: { rawReports: [], clusters: [] }
+    };
+    let map = null;
+    let markersLayer = null;
+
+    // ============================================================
+    // AUTHENTICATION (prototype gate)
+    // Two separate login forms — students can only submit the student
+    // form, wardens/admins can only submit the admin form. There is no
+    // backend here, so this validates format only and assigns a role;
+    // wire this up to your real identity provider (SSO / LDAP) before
+    // using this outside a demo.
+    // ============================================================
+    let currentUser = null; // { role: 'student' | 'admin', id, name }
+
+    function setLoginRole(role) {
+      const studentBtn = document.getElementById('loginRoleStudentBtn');
+      const adminBtn = document.getElementById('loginRoleAdminBtn');
+      studentBtn.classList.toggle('is-active', role === 'student');
+      adminBtn.classList.toggle('is-active', role === 'admin');
+      document.getElementById('studentLoginForm').classList.toggle('hidden', role !== 'student');
+      document.getElementById('adminLoginForm').classList.toggle('hidden', role !== 'admin');
+    }
+
+    function deriveDisplayName(id, role) {
+      if (role === 'admin') {
+        const namePart = id.split('@')[0].replace(/[._0-9]+/g, ' ').trim();
+        const formatted = namePart.replace(/\b\w/g, c => c.toUpperCase());
+        return formatted || 'Campus Administrator';
+      }
+      return id.toUpperCase();
+    }
+
+    function handleLogin(event, role) {
+      event.preventDefault();
+      const idField = document.getElementById(role === 'student' ? 'studentLoginId' : 'adminLoginId');
+      const passField = document.getElementById(role === 'student' ? 'studentLoginPass' : 'adminLoginPass');
+      const errBox = document.getElementById(role === 'student' ? 'studentLoginError' : 'adminLoginError');
+
+      const id = idField.value.trim();
+      const pass = passField.value;
+
+      if (id.length < 4 || pass.length < 4) {
+        errBox.innerText = role === 'student'
+          ? 'Enter a valid Net ID / Registration Number and a password of at least 4 characters.'
+          : 'Enter a valid Employee ID / Institutional email and a password of at least 4 characters.';
+        errBox.classList.remove('hidden');
+        return;
+      }
+
+      // Wardens/Admins must sign in with a recognized institutional email
+      // domain — keeps the "reserved for verified staff" claim on the login
+      // card actually true, even in this demo build.
+      if (role === 'admin') {
+        const allowedDomains = Object.values(UNIVERSITIES).map(u => u.domain);
+        const atIndex = id.lastIndexOf('@');
+        const emailDomain = atIndex !== -1 ? id.slice(atIndex + 1).toLowerCase() : null;
+        const isAllowed = emailDomain && allowedDomains.some(d => emailDomain === d || emailDomain.endsWith('.' + d));
+
+        if (!isAllowed) {
+          errBox.innerText = `Warden/Admin sign-in requires a verified institutional email (${allowedDomains.join(', ')}).`;
+          errBox.classList.remove('hidden');
+          return;
+        }
+      }
+
+      errBox.classList.add('hidden');
+
+      completeLogin({ role, id, name: deriveDisplayName(id, role) });
+    }
+
+    function completeLogin(user) {
+      currentUser = user;
+
+      if (user.role === 'student') {
+        // Students only ever operate on the SRM KTR tenant.
+        handleTenantChange('srmist');
+      }
+
+      applyRoleUI();
+
+      document.getElementById('loginGate').classList.add('hidden');
+      document.getElementById('appHeader').classList.remove('hidden');
+      document.getElementById('appMain').classList.remove('hidden');
+      document.getElementById('appFooter').classList.remove('hidden');
+
+      showToast(`Welcome, ${user.name}`, user.role === 'student' ? '🎓' : '🛡️');
+    }
+
+    function applyRoleUI() {
+      if (!currentUser) return;
+      const isStudent = currentUser.role === 'student';
+
+      document.getElementById('tabAdminBtn').classList.toggle('hidden', isStudent);
+      document.getElementById('tabMacroBtn').classList.toggle('hidden', isStudent);
+      document.getElementById('tenantSelectorWrap').classList.toggle('hidden', isStudent);
+      document.getElementById('demoInfluxBtn').classList.toggle('hidden', isStudent || window.innerWidth < 768);
+
+      const chip = document.getElementById('userChip');
+      chip.classList.remove('hidden');
+      chip.classList.add('flex');
+      document.getElementById('userChipName').innerText = currentUser.name;
+      document.getElementById('userChipRole').innerText = isStudent ? 'STUDENT' : 'WARDEN/ADMIN';
+
+      switchTab(isStudent ? 'student' : 'admin');
+    }
+
+    function handleLogout() {
+      currentUser = null;
+
+      document.getElementById('loginGate').classList.remove('hidden');
+      document.getElementById('appHeader').classList.add('hidden');
+      document.getElementById('appMain').classList.add('hidden');
+      document.getElementById('appFooter').classList.add('hidden');
+      document.getElementById('userChip').classList.add('hidden');
+      document.getElementById('userChip').classList.remove('flex');
+
+      document.getElementById('studentLoginForm').reset();
+      document.getElementById('adminLoginForm').reset();
+      document.getElementById('studentLoginError').classList.add('hidden');
+      document.getElementById('adminLoginError').classList.add('hidden');
+      setLoginRole('student');
+    }
+
+    function showToast(message, icon = '⚡') {
+      const toast = document.getElementById('toastNotification');
+      const toastMsg = document.getElementById('toastMessage');
+      const toastIco = document.getElementById('toastIcon');
+      if (toast && toastMsg) {
+        toastMsg.innerText = message;
+        if (toastIco) toastIco.innerText = icon;
+        toast.classList.remove('translate-y-20', 'opacity-0', 'pointer-events-none');
+        setTimeout(() => {
+          toast.classList.add('translate-y-20', 'opacity-0', 'pointer-events-none');
+        }, 3800);
+      }
+    }
+
+    function handleDirectSOSCall() {
+      const tenant = UNIVERSITIES[currentTenant];
+      const primaryContact = tenant.emergencyContacts[0];
+      
+      const proceed = confirm(`🚨 CAMPUS EMERGENCY SOS\n\nDirectly launch phone dialer to call ${tenant.name} Emergency Security Room (${primaryContact.phone})?`);
+      
+      if (proceed) {
+        window.location.href = `tel:${primaryContact.phone}`;
+      } else {
+        openEmergencyModal();
+      }
+    }
+
+    function openEmergencyModal(autoReason) {
+      const modal = document.getElementById('emergencyModal');
+      const container = document.getElementById('emergencyContactsList');
+      const tenant = UNIVERSITIES[currentTenant];
+
+      const banner = document.getElementById('emergencyAutoBanner');
+      if (banner) {
+        if (autoReason) {
+          banner.classList.remove('hidden');
+          banner.innerText = autoReason;
+        } else {
+          banner.classList.add('hidden');
+        }
+      }
+
+      container.innerHTML = tenant.emergencyContacts.map(c => `
+        <div class="p-3 bg-slate-900 border border-slate-700/80 rounded-xl flex items-center justify-between text-xs">
+          <div>
+            <div class="font-bold text-white">${c.role}</div>
+            <div class="text-slate-400 font-mono text-[11px]">${c.phone}</div>
+          </div>
+          <a href="tel:${c.phone}" class="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-lg text-xs flex items-center gap-1.5 shadow">
+            <span>📞 Call</span>
+          </a>
+        </div>
+      `).join('');
+
+      modal.classList.remove('hidden');
+    }
+
+    function closeEmergencyModal() {
+      document.getElementById('emergencyModal').classList.add('hidden');
+    }
+
+    function handleMediaSelection(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      const isVideo = file.type.startsWith('video/');
+      // Gemini's inline_data works for images always; for video keep it short —
+      // large base64 payloads (>~15-18MB) will get rejected by the API.
+      if (isVideo && file.size > 18 * 1024 * 1024) {
+        showToast('Video too large for AI analysis (keep clips under ~15s)', '⚠️');
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        attachedPhotoBase64 = e.target.result; // data:<mime>;base64,....
+        attachedMediaMimeType = file.type;
+        lastAIAnalysis = null;
+
+        const previewBox = document.getElementById('photoPreviewBox');
+        const previewImg = document.getElementById('uploadedPhotoPreview');
+        const previewVid = document.getElementById('uploadedVideoPreview');
+
+        if (isVideo) {
+          previewImg.classList.add('hidden');
+          previewVid.classList.remove('hidden');
+          previewVid.src = attachedPhotoBase64;
+        } else {
+          previewVid.classList.add('hidden');
+          previewImg.classList.remove('hidden');
+          previewImg.src = attachedPhotoBase64;
+        }
+        previewBox.classList.remove('hidden');
+
+        document.getElementById('descInput').placeholder = 'Evidence attached. Description is completely optional...';
+        showToast(`${isVideo ? 'Video' : 'Photo'} attached & anonymized — running AI analysis`, isVideo ? '🎥' : '📸');
+
+        analyzeMediaWithGemini(attachedPhotoBase64, attachedMediaMimeType);
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function removeAttachedPhoto() {
+      attachedPhotoBase64 = null;
+      attachedMediaMimeType = null;
+      lastAIAnalysis = null;
+      document.getElementById('photoPreviewBox').classList.add('hidden');
+      document.getElementById('uploadedVideoPreview').classList.add('hidden');
+      document.getElementById('aiAnalysisBox').classList.add('hidden');
+      document.getElementById('fileUploadInput').value = '';
+      document.getElementById('descInput').placeholder = 'Optional when photo is uploaded. Provide extra details if needed...';
+    }
+
+    // ============================================================
+    // LIVE CAMERA CAPTURE (getUserMedia)
+    // A <input type="file" capture="environment"> only opens a real camera
+    // on most mobile browsers — on desktop it just falls back to a plain
+    // file picker, which is why it looked identical to "Upload". This talks
+    // to the camera hardware directly instead, so it works everywhere.
+    // ============================================================
+    let cameraStream = null;
+
+    async function openCameraCapture() {
+      const modal = document.getElementById('cameraModal');
+      const video = document.getElementById('cameraLiveVideo');
+      const errorOverlay = document.getElementById('cameraErrorOverlay');
+
+      modal.classList.remove('hidden');
+      errorOverlay.classList.add('hidden');
+      video.classList.remove('hidden');
+
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        errorOverlay.classList.remove('hidden');
+        errorOverlay.innerText = 'Camera API not supported in this browser. Falling back to file upload.';
+        video.classList.add('hidden');
+        setTimeout(() => {
+          closeCameraCapture();
+          document.getElementById('fileUploadInput').click();
+        }, 1500);
+        return;
+      }
+
+      try {
+        // facingMode 'environment' prefers the rear camera on phones; on a
+        // laptop with a single webcam this constraint is just ignored.
+        cameraStream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: { ideal: 'environment' } },
+          audio: false
+        });
+        video.srcObject = cameraStream;
+      } catch (err) {
+        console.warn('Camera access failed:', err);
+        video.classList.add('hidden');
+        errorOverlay.classList.remove('hidden');
+        if (err.name === 'NotAllowedError') {
+          errorOverlay.innerText = 'Camera permission denied. Allow camera access in your browser settings, or use Upload instead.';
+        } else if (err.name === 'NotFoundError') {
+          errorOverlay.innerText = 'No camera found on this device. Use Upload instead.';
+        } else if (location.protocol !== 'https:' && !['localhost', '127.0.0.1'].includes(location.hostname)) {
+          errorOverlay.innerText = 'Camera requires HTTPS (or localhost). This page is being opened as a local file — host it on a local server or HTTPS to use the live camera, or use Upload instead.';
+        } else {
+          errorOverlay.innerText = `Could not access camera: ${err.message}`;
+        }
+      }
+    }
+
+    function closeCameraCapture() {
+      const modal = document.getElementById('cameraModal');
+      modal.classList.add('hidden');
+      if (cameraStream) {
+        cameraStream.getTracks().forEach(track => track.stop());
+        cameraStream = null;
+      }
+    }
+
+    function captureFromCamera() {
+      const video = document.getElementById('cameraLiveVideo');
+      if (!cameraStream || !video.videoWidth) {
+        showToast('Camera not ready yet — wait a moment and try again', '⚠️');
+        return;
+      }
+
+      const canvas = document.getElementById('cameraCaptureCanvas');
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
+
+      const dataUrl = canvas.toDataURL('image/jpeg', 0.92);
+
+      attachedPhotoBase64 = dataUrl;
+      attachedMediaMimeType = 'image/jpeg';
+      lastAIAnalysis = null;
+
+      const previewBox = document.getElementById('photoPreviewBox');
+      const previewImg = document.getElementById('uploadedPhotoPreview');
+      const previewVid = document.getElementById('uploadedVideoPreview');
+      previewVid.classList.add('hidden');
+      previewImg.classList.remove('hidden');
+      previewImg.src = dataUrl;
+      previewBox.classList.remove('hidden');
+
+      document.getElementById('descInput').placeholder = 'Evidence attached. Description is completely optional...';
+      showToast('Photo captured & anonymized — running AI analysis', '📸');
+
+      closeCameraCapture();
+      analyzeMediaWithGemini(dataUrl, 'image/jpeg');
+    }
+
+    // Strips the "data:<mime>;base64," prefix Gemini's inline_data field needs raw base64 for.
+    function stripDataUrlPrefix(dataUrl) {
+      const commaIdx = dataUrl.indexOf(',');
+      return commaIdx !== -1 ? dataUrl.slice(commaIdx + 1) : dataUrl;
+    }
+
+    async function analyzeMediaWithGemini(dataUrl, mimeType) {
+      const statusBox = document.getElementById('aiAnalysisBox');
+      const statusLine = document.getElementById('aiAnalysisStatusLine');
+      const resultLine = document.getElementById('aiAnalysisResultLine');
+
+      statusBox.classList.remove('hidden');
+      resultLine.classList.add('hidden');
+      statusLine.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-cyan-400 pulse-slow"></span> Running Gemini Vision analysis...`;
+
+      if (!GEMINI_API_KEY || GEMINI_API_KEY === 'PASTE_YOUR_GEMINI_API_KEY_HERE') {
+        statusLine.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-amber-400"></span> AI key not configured — using text-based severity only`;
+        lastAIAnalysis = null;
+        return;
+      }
+
+      const prompt = `You are a campus safety triage assistant. Look at the attached photo or video of a campus facility issue.
+Respond with ONLY raw JSON (no markdown fences, no extra text) in exactly this shape:
+{"category":"one of: Electrical & Fire Safety, Sanitation & Water Supply, Hostel & Pest Control, Mess & Food Safety, Campus Transit & Mobility, Internet & IT Lab Services, Civil Infrastructure & Elevators, Campus Safety & Night Lighting, Academic & Classroom Facilities, Waste & Sustainability, Other",
+"severity":1-5 (1=cosmetic/minor, 2=routine maintenance, 3=moderate, 4=urgent repair needed, 5=immediate danger to life/safety e.g. active fire, sparking exposed wiring, structural collapse, someone trapped, medical emergency),
+"isCritical": true only if this poses an immediate danger to life/safety and authorities should be contacted right now, false otherwise,
+"summary":"one short factual sentence describing what is visible"}
+Be conservative: only mark isCritical true for genuine emergencies, not routine wear-and-tear or minor mess.`;
+
+      try {
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 20000);
+
+        const response = await fetch(GEMINI_ENDPOINT, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-goog-api-key': GEMINI_API_KEY
+          },
+          signal: controller.signal,
+          body: JSON.stringify({
+            contents: [{
+              parts: [
+                { text: prompt },
+                { inline_data: { mime_type: mimeType, data: stripDataUrlPrefix(dataUrl) } }
+              ]
+            }],
+            generationConfig: { maxOutputTokens: 300 }
+          })
+        });
+        clearTimeout(timeout);
+
+        if (!response.ok) {
+          const errBody = await response.text().catch(() => '');
+          throw new Error(`HTTP ${response.status} — ${errBody.slice(0, 180)}`);
+        }
+
+        const data = await response.json();
+        const rawText = data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
+        if (!rawText) {
+          const blockReason = data?.promptFeedback?.blockReason;
+          throw new Error(blockReason ? `Blocked by safety filter: ${blockReason}` : 'Empty response from Gemini');
+        }
+        const cleaned = rawText.replace(/```json|```/g, '').trim();
+        const parsed = JSON.parse(cleaned);
+
+        lastAIAnalysis = {
+          category: parsed.category || null,
+          severity: Math.min(5, Math.max(1, Number(parsed.severity) || 2)),
+          isCritical: !!parsed.isCritical,
+          summary: parsed.summary || ''
+        };
+
+        statusLine.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span> AI Vision analysis complete`;
+        resultLine.classList.remove('hidden');
+        resultLine.innerHTML = `
+          <span class="font-mono ${lastAIAnalysis.isCritical ? 'text-rose-400' : 'text-emerald-300'}">
+            ${lastAIAnalysis.isCritical ? '🚨 AI flags this as CRITICAL' : `Severity ${lastAIAnalysis.severity}/5`}
+          </span> — ${lastAIAnalysis.summary}`;
+
+        if (lastAIAnalysis.isCritical) {
+          document.getElementById('emergencyEscalateCheck').checked = true;
+          showToast('🚨 AI detected a critical hazard — emergency escalation auto-enabled', '🚨');
+        }
+      } catch (err) {
+        console.warn('Gemini analysis failed, falling back to text-based scoring:', err);
+        lastAIAnalysis = null;
+        statusLine.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-amber-400"></span> AI unavailable — falling back to text-based severity`;
+        resultLine.classList.remove('hidden');
+        resultLine.innerHTML = `<span class="text-amber-400 font-mono text-[10px]">${(err.message || String(err)).slice(0, 200)}</span>`;
+      }
+    }
+
+    function sanitizeTextOnDevice(rawText) {
+      let sanitized = rawText || '';
+      sanitized = sanitized.replace(/(\+?\d{1,3}[-.\s]?)?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}/g, '[PHONE REDACTED]');
+      sanitized = sanitized.replace(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g, '[EMAIL REDACTED]');
+      sanitized = sanitized.replace(/ (my room|room no\.?|flat no\.?)\s*\d+[a-zA-Z]? /gi, '$1 [ROOM #]');
+      sanitized = sanitized.replace(/ (warden|prof|professor|dr|sir|ma'am|dean)\s+[a-zA-Z]+/gi, '$1 [NAME REDACTED]');
+      return sanitized;
+    }
+
+    function previewSanitization(val) {
+      const box = document.getElementById('sanitizationPreviewBox');
+      const output = document.getElementById('sanitizedTextOutput');
+      if (val.trim().length > 0) {
+        box.classList.remove('hidden');
+        output.innerText = sanitizeTextOnDevice(val);
+      } else {
+        box.classList.add('hidden');
+      }
+    }
+
+    function generateBlindedToken() {
+      const hex = Math.floor(Math.random() * 0xFFFFF).toString(16).toUpperCase().padStart(5, '0');
+      return `Verified Resident #${hex}`;
+    }
+
+    const CATEGORY_WEIGHTS = {
+      'Electrical & Fire Safety': 30,
+      'Sanitation & Water Supply': 28,
+      'Campus Safety & Night Lighting': 26,
+      'Mess & Food Safety': 24,
+      'Hostel & Pest Control': 22,
+      'Civil Infrastructure & Elevators': 20,
+      'Campus Transit & Mobility': 18,
+      'Academic & Classroom Facilities': 16,
+      'Internet & IT Lab Services': 14,
+      'Mental Health & Student Support': 26,
+      'Noise & Quiet Study Zones': 12,
+      'Waste & Sustainability': 12
+    };
+
+    const SEVERITY_LEXICON = {
+      level5: [
+        'active fire', 'flames', 'smoke billowing', 'explosion', 'blast',
+        'stuck in lift', 'lift trap', 'elevator trap', 'gas leak', 'medical emergency',
+        'unconscious', 'fainted', 'vomiting blood', 'physical fight', 'assault', 'ceiling collapse'
+      ],
+      level4: [
+        'short circuit', 'power board spark', 'sparks', 'sparking', 'switchboard spark', 'electric shock',
+        'no water', 'water cut', 'dry taps', 'power outage', 'blackout', 'sewage overflow',
+        'drain blockage', 'spoiled food', 'rotten', 'insects in food', 'unlit dark road',
+        'broken lock', 'cctv broken', 'lift broken'
+      ],
+      level3: [
+        'loose switch', 'switch sparking small', 'ac not cooling', 'fan not working',
+        'tube light broken', 'wifi down', 'no internet', 'slow internet', 'portal down',
+        'projector broken', 'mic not working', 'shuttle delayed', 'laundry broken',
+        'bedbugs', 'trash overflow', 'room not cleaned', 'uncleaned'
+      ],
+      level2: [
+        'leaking pipe', 'water leakage', 'slow tap', 'creaking door', 'loose switch', 'paint peeling',
+        'dirty whiteboard', 'fan making noise', 'dusty room'
+      ],
+      level1: [
+        'not picking call', 'not answering', 'not picked call', 'unresponsive phone',
+        'call busy', 'office closed early', 'delayed response', 'lost key duplicate', 'fee receipt'
+      ]
+    };
+
+    function inferSeverity(title, description, category, isEmergencyFlagged = false) {
+      if (isEmergencyFlagged) {
+        const fullText = (title + ' ' + description).toLowerCase();
+        const hasCatastrophicSign = SEVERITY_LEXICON.level5.some(word => fullText.includes(word));
+        if (hasCatastrophicSign) {
+          return { severity: 5, tag: 'AUTHORITIES DISPATCHED (EMERGENCY)' };
+        }
+        return { severity: 4, tag: 'URGENT ESCALATION (FACILITY DISPATCH)' };
+      }
+
+      const fullText = (title + ' ' + description).toLowerCase();
+
+      for (let word of SEVERITY_LEXICON.level1) {
+        if (fullText.includes(word)) return { severity: 1, tag: 'ADMINISTRATIVE FOLLOW-UP' };
+      }
+      for (let word of SEVERITY_LEXICON.level5) {
+        if (fullText.includes(word)) return { severity: 5, tag: 'CRITICAL HAZARD (EMERGENCY)' };
+      }
+      for (let word of SEVERITY_LEXICON.level4) {
+        if (fullText.includes(word)) return { severity: 4, tag: 'HIGH SEVERITY (URGENT REPAIR)' };
+      }
+      for (let word of SEVERITY_LEXICON.level3) {
+        if (fullText.includes(word)) return { severity: 3, tag: 'MODERATE ISSUE' };
+      }
+      for (let word of SEVERITY_LEXICON.level2) {
+        if (fullText.includes(word)) return { severity: 2, tag: 'ROUTINE MAINTENANCE' };
+      }
+
+      if (category === 'Electrical & Fire Safety' || category === 'Campus Safety & Night Lighting') {
+        return { severity: 3, tag: 'SAFETY CONCERN' };
+      }
+      if (category === 'Mess & Food Safety' || category === 'Sanitation & Water Supply') {
+        return { severity: 3, tag: 'HEALTH CONCERN' };
+      }
+      return { severity: 2, tag: 'GENERAL TICKET' };
+    }
+
+    function computeCampusAIScore({ category, severity, daysUnresolved, affectedCount, reportCount, locationType, isEmergencyFlagged }) {
+      if (isEmergencyFlagged && severity === 5) return 99;
+
+      const days = Number(daysUnresolved) || 1;
+      const affected = Number(affectedCount || 2);
+      const count = Number(reportCount) || 1;
+
+      const severityPts = { 1: 8, 2: 16, 3: 26, 4: 36, 5: 45 }[severity] || 18;
+      const catFactor = (CATEGORY_WEIGHTS[category] || 15) * 0.25;
+
+      let agingPts = 0;
+      if (days <= 1) agingPts = 1;
+      else if (days <= 3) agingPts = 6;
+      else if (days <= 7) agingPts = 14;
+      else if (days <= 14) agingPts = 22;
+      else agingPts = 28; // Accumulates strong delay points for 30+ days neglect
+
+      let popPts = 2;
+      if (affected >= 1000) popPts = 18;
+      else if (affected >= 200) popPts = 14;
+      else if (affected >= 30) popPts = 8;
+      else popPts = 3;
+
+      const volumeBoost = Math.min((count - 1) * 4, 12);
+      const facilityPts = locationType === 'Hospital' ? 7 : (locationType === 'Residential' ? 6 : 4);
+      const emergencyBoost = (isEmergencyFlagged && severity < 5) ? 10 : 0;
+
+      let total = Math.round(severityPts + catFactor + agingPts + popPts + volumeBoost + facilityPts + emergencyBoost);
+
+      // STRICT SEVERITY CEILINGS (CAPS) — prevents 30+ day routine issues from inflating to 99/100
+      let maxCap = 100;
+      if (severity === 1) {
+        maxCap = 38;
+      } else if (severity === 2) {
+        maxCap = 58; // e.g., 30+ day uncleaned room lands safely around ~52-58
+      } else if (severity === 3) {
+        maxCap = 74; // Stays just below the 75 critical red threshold
+      } else if (severity === 4) {
+        maxCap = 87;
+      }
+
+      return Math.min(Math.max(total, 5), maxCap);
+    }
+
+    const VOCABULARY = [
+      'water', 'tap', 'leak', 'shortage', 'drain', 'pipe', 'flood', 'sewage',
+      'spark', 'shock', 'electric', 'power', 'blackout', 'switch', 'light', 'dark',
+      'ac', 'cooling', 'fan', 'projector', 'food', 'mess', 'hygiene', 'poison', 'spoiled',
+      'mosquito', 'bedbug', 'pest', 'laundry', 'washroom', 'toilet', 'flush',
+      'lift', 'elevator', 'stuck', 'door', 'lock', 'cctv', 'shuttle', 'buggy', 'wifi', 'internet',
+      'noise', 'garbage', 'trash', 'medical', 'stress', 'warden', 'call', 'photo', 'image', 'clean'
+    ];
+
+    function extractVector(text) {
+      const tokens = text.toLowerCase().replace(/[^a-z0-9 ]/g, '').split(/\s+/);
+      const vec = new Array(VOCABULARY.length).fill(0);
+      tokens.forEach(t => {
+        const idx = VOCABULARY.indexOf(t);
+        if (idx !== -1) vec[idx] += 1;
+      });
+      return vec;
+    }
+
+    function computeCosineSimilarity(vecA, vecB) {
+      let dot = 0, normA = 0, normB = 0;
+      for (let i = 0; i < vecA.length; i++) {
+        dot += vecA[i] * vecB[i];
+        normA += vecA[i] * vecB[i];
+        normB += vecB[i] * vecB[i];
+      }
+      if (normA === 0 || normB === 0) return 0;
+      return dot / (Math.sqrt(normA) * Math.sqrt(normB));
+    }
+
+    function processReport({ title, description, category, locationName, daysUnresolved, impactScope, tenantId, customBlindedId, photoData, isEmergencyFlagged, aiAnalysis }) {
+      const tenant = UNIVERSITIES[tenantId || currentTenant];
+      const location = tenant.locations[locationName] || Object.values(tenant.locations)[0];
+      
+      const cleanTitle = sanitizeTextOnDevice(title);
+      const cleanDesc = sanitizeTextOnDevice(description);
+      const days = Number(daysUnresolved) || 1;
+      const affected = Number(impactScope) || 2;
+
+      // AI vision can only escalate the flagged emergency status, never suppress a
+      // student's own checkbox — it's a safety net, not a filter.
+      isEmergencyFlagged = !!isEmergencyFlagged || !!(aiAnalysis && aiAnalysis.isCritical);
+
+      let aiEval = inferSeverity(cleanTitle, cleanDesc, category, isEmergencyFlagged);
+
+      // Take the worse of text-inferred severity and Gemini's visual severity —
+      // a scary photo shouldn't get diluted by a mild text description, or vice versa.
+      if (aiAnalysis && Number.isFinite(aiAnalysis.severity) && aiAnalysis.severity > aiEval.severity) {
+        aiEval = {
+          severity: aiAnalysis.severity,
+          tag: aiAnalysis.isCritical ? 'AI-DETECTED CRITICAL HAZARD (VISION)' : 'AI-ELEVATED SEVERITY (VISION)'
+        };
+      }
+      const combinedText = `${cleanTitle} ${cleanDesc} ${category}`;
+      const featureVec = extractVector(combinedText);
+      const blindedStudentId = customBlindedId || generateBlindedToken();
+
+      const individualScore = computeCampusAIScore({
+        category,
+        severity: aiEval.severity,
+        daysUnresolved: days,
+        affectedCount: affected,
+        reportCount: 1,
+        locationType: location.type,
+        isEmergencyFlagged
+      });
+
+      const reportObj = {
+        id: 'R-' + Math.floor(1000 + Math.random() * 9000),
+        title: cleanTitle,
+        description: cleanDesc,
+        category,
+        locationName,
+        location,
+        inferredSeverity: aiEval.severity,
+        tag: aiEval.tag,
+        daysUnresolved: days,
+        affectedCount: affected,
+        campusAIScore: individualScore,
+        blindedStudentId: blindedStudentId,
+        photoData: photoData || null,
+        isEmergencyFlagged: !!isEmergencyFlagged,
+        aiAnalysis: aiAnalysis || null,
+        authoritiesNotified: !!isEmergencyFlagged || individualScore >= AUTO_ESCALATION_SCORE_THRESHOLD,
+        claimToken: 'ZK-KEY-' + Math.floor(100000 + Math.random() * 900000),
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
+        featureVec
+      };
+
+      const storage = tenantData[tenant.id];
+      storage.rawReports.unshift(reportObj);
+
+      let matchedCluster = null;
+      let highestSimilarity = 0;
+
+      for (let c of storage.clusters) {
+        if (c.locationName === locationName && c.status !== 'Resolved') {
+          const sim = computeCosineSimilarity(featureVec, c.representativeVec);
+          if (sim > 0.35 && sim > highestSimilarity) {
+            highestSimilarity = sim;
+            matchedCluster = c;
+          }
+        }
+      }
+
+      if (matchedCluster) {
+        matchedCluster.reports.unshift(reportObj);
+        matchedCluster.reportCount = matchedCluster.reports.length;
+        matchedCluster.maxSeverity = Math.max(matchedCluster.maxSeverity, reportObj.inferredSeverity);
+        matchedCluster.maxDaysUnresolved = Math.max(matchedCluster.maxDaysUnresolved || 1, days);
+        matchedCluster.estAffected = Math.max(matchedCluster.estAffected || 2, affected) + (matchedCluster.reportCount * 15);
+        if (reportObj.photoData && !matchedCluster.photoData) {
+          matchedCluster.photoData = reportObj.photoData;
+        }
+        if (reportObj.isEmergencyFlagged) {
+          matchedCluster.isEmergencyFlagged = true;
+        }
+
+        matchedCluster.campusAIScore = computeCampusAIScore({
+          category: matchedCluster.category,
+          severity: matchedCluster.maxSeverity,
+          daysUnresolved: matchedCluster.maxDaysUnresolved,
+          affectedCount: matchedCluster.estAffected,
+          reportCount: matchedCluster.reportCount,
+          locationType: location.type,
+          isEmergencyFlagged: matchedCluster.isEmergencyFlagged
+        });
+        matchedCluster.lastUpdated = reportObj.timestamp;
+      } else {
+        const newCluster = {
+          id: 'CLUST-' + Math.floor(100 + Math.random() * 900),
+          title: `${category}: ${cleanTitle}`,
+          category,
+          locationName,
+          location,
+          status: 'Under AI Monitoring',
+          reportCount: 1,
+          reports: [reportObj],
+          maxSeverity: reportObj.inferredSeverity,
+          maxDaysUnresolved: days,
+          estAffected: affected,
+          photoData: reportObj.photoData,
+          isEmergencyFlagged: reportObj.isEmergencyFlagged,
+          tag: aiEval.tag,
+          representativeVec: featureVec,
+          campusAIScore: individualScore,
+          lastUpdated: reportObj.timestamp
+        };
+        storage.clusters.push(newCluster);
+      }
+
+      storage.clusters.sort((a, b) => b.campusAIScore - a.campusAIScore);
+      updateUI();
+      return reportObj;
+    }
+
+    function populateLocationDropdown(tenant) {
+      const locSelect = document.getElementById('locationInput');
+      
+      const groups = {
+        'Academic & Research Blocks': [],
+        'Hostel & Residential Blocks': [],
+        'Plazas, Dining & Student Hubs': [],
+        'Healthcare & Medical Facilities': []
+      };
+
+      Object.keys(tenant.locations).forEach(locName => {
+        const loc = tenant.locations[locName];
+        const type = loc.type.toLowerCase();
+        
+        if (type.includes('hospital') || type.includes('medical') || type.includes('dental')) {
+          groups['Healthcare & Medical Facilities'].push({ name: locName, desc: loc.type });
+        } else if (type.includes('residential') || type.includes('hostel')) {
+          groups['Hostel & Residential Blocks'].push({ name: locName, desc: loc.type });
+        } else if (type.includes('plaza') || type.includes('food') || type.includes('dining') || type.includes('canteen')) {
+          groups['Plazas, Dining & Student Hubs'].push({ name: locName, desc: loc.type });
+        } else {
+          groups['Academic & Research Blocks'].push({ name: locName, desc: loc.type });
+        }
+      });
+
+      let html = '';
+      Object.keys(groups).forEach(grpName => {
+        if (groups[grpName].length > 0) {
+          html += `<optgroup label="📂 ${grpName}">`;
+          groups[grpName].forEach(item => {
+            html += `<option value="${item.name}">${item.name} (${item.desc})</option>`;
+          });
+          html += `</optgroup>`;
+        }
+      });
+
+      locSelect.innerHTML = html;
+    }
+
+    function handleTenantChange(newTenantId) {
+      currentTenant = newTenantId;
+      const tenant = UNIVERSITIES[currentTenant];
+      
+      populateLocationDropdown(tenant);
+      
+      document.getElementById('currentTenantSubtitle').innerText = `Showing real-time individual student pings with photos & aging data for ${tenant.name}`;
+      document.getElementById('mapTenantTag').innerText = `${tenant.name} (${tenant.campusTag})`;
+
+      if (map) {
+        map.setView(tenant.mapCenter, tenant.zoom);
+      }
+
+      updateUI();
+    }
+
+    function updateUI() {
+      const storage = tenantData[currentTenant];
+      const raw = storage.rawReports;
+      const clust = storage.clusters;
+
+      const totalRaw = raw.length;
+      const totalClusters = clust.length;
+      const criticalCount = clust.filter(c => c.campusAIScore >= 75 && c.status !== 'Resolved').length;
+      const noise = totalRaw > 0 ? Math.round(((totalRaw - totalClusters) / totalRaw) * 100) : 0;
+
+      document.getElementById('statRawReports').innerText = totalRaw;
+      document.getElementById('statClusters').innerText = totalClusters;
+      document.getElementById('statCritical').innerText = criticalCount;
+      document.getElementById('statNoiseReduction').innerText = `${Math.max(0, noise)}%`;
+      document.getElementById('liveCountBadge').innerText = `${totalRaw} Raw Pings`;
+
+      // 1. Render Live Telemetry Stream
+      const streamContainer = document.getElementById('recentReportsList');
+      if (raw.length === 0) {
+        streamContainer.innerHTML = `<div class="text-center py-16 text-slate-500 text-xs">No telemetry pings logged for ${UNIVERSITIES[currentTenant].name} yet.</div>`;
+      } else {
+        streamContainer.innerHTML = raw.map(r => {
+          const isHigh = r.campusAIScore >= 70;
+          const isMed = r.campusAIScore >= 45 && r.campusAIScore < 70;
+          const scoreBadgeClass = isHigh
+            ? 'bg-rose-500/15 text-rose-400 border-rose-500/30'
+            : isMed
+            ? 'bg-amber-500/15 text-amber-400 border-amber-500/30'
+            : 'bg-cyan-500/15 text-cyan-400 border-cyan-500/30';
+
+          return `
+            <div class="p-3.5 bg-[#060c18] border border-slate-800/80 rounded-xl flex items-start justify-between gap-3 text-xs shadow-sm hover:border-slate-700 transition">
+              <div class="space-y-1.5 flex-1">
+                <div class="flex flex-wrap items-center gap-2">
+                  <span class="font-bold text-white tracking-tight">${r.title}</span>
+                  ${r.authoritiesNotified ? '<span class="px-2 py-0.5 text-[9.5px] font-bold bg-rose-600 text-white rounded-full animate-pulse">🚨 AUTHORITIES NOTIFIED</span>' : ''}
+                  <span class="text-[10px] px-2 py-0.5 rounded-md bg-slate-900 border border-slate-800 text-slate-300 font-medium">📍 ${r.locationName}</span>
+                  <span class="text-[10px] text-slate-400 font-medium">${r.category}</span>
+                  <span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-slate-800 text-amber-300">⏳ ${r.daysUnresolved} Day(s) Unresolved</span>
+                </div>
+                <p class="text-slate-400 text-xs leading-relaxed">${r.description}</p>
+
+                ${r.aiAnalysis ? `
+                  <div class="text-[10.5px] font-mono ${r.aiAnalysis.isCritical ? 'text-rose-400' : 'text-cyan-400'} bg-slate-950/60 border border-slate-800 rounded-lg px-2 py-1 inline-block">
+                    🤖 Gemini Vision: ${r.aiAnalysis.summary}
+                  </div>
+                ` : ''}
+                
+                ${r.photoData ? `
+                  <div class="mt-2 inline-block">
+                    ${r.photoData.startsWith('data:video') ? `
+                      <video src="${r.photoData}" controls class="h-20 w-auto rounded-lg border border-slate-700 object-cover shadow-sm"></video>
+                    ` : `
+                      <img src="${r.photoData}" alt="Evidence" class="h-20 w-auto rounded-lg border border-slate-700 object-cover shadow-sm">
+                    `}
+                  </div>
+                ` : ''}
+
+                <div class="flex flex-wrap items-center gap-2 text-[10px] text-slate-500 font-mono pt-0.5">
+                  <span class="text-emerald-400 font-semibold bg-emerald-950/30 px-1.5 py-0.5 rounded border border-emerald-900/50">🔒 ${r.blindedStudentId}</span>
+                  <span>•</span>
+                  <span class="text-cyan-400/80">Token: ${r.claimToken}</span>
+                  <span>•</span>
+                  <span>Impact: ~${r.affectedCount} students</span>
+                  <span>•</span>
+                  <span>${r.timestamp}</span>
+                </div>
+              </div>
+              <div class="flex flex-col items-end shrink-0 gap-1">
+                <span class="px-2.5 py-1 text-[11px] font-mono font-bold rounded-lg border ${scoreBadgeClass}" title="Based on category severity, days unresolved, people affected, facility type, and how many duplicate reports clustered together.">
+                  Campus AI Score: ${r.campusAIScore}/100
+                </span>
+                <span class="text-[9px] font-mono text-slate-500 font-semibold uppercase tracking-wider">${r.tag}</span>
+              </div>
+            </div>
+          `;
+        }).join('');
+      }
+
+      // 2. Render Warden Prioritized Clusters Queue
+      const queueContainer = document.getElementById('clusterQueueContainer');
+      if (clust.length === 0) {
+        queueContainer.innerHTML = `<div class="text-center py-20 text-slate-500 text-xs">No active clusters for this campus.</div>`;
+      } else {
+        queueContainer.innerHTML = clust.map(c => {
+          const isCritical = c.campusAIScore >= 75;
+          const isHigh = c.campusAIScore >= 50 && c.campusAIScore < 75;
+          const badgeClass = isCritical 
+            ? 'bg-rose-500/15 text-rose-400 border-rose-500/30 shadow-rose-500/10' 
+            : isHigh 
+            ? 'bg-amber-500/15 text-amber-400 border-amber-500/30 shadow-amber-500/10' 
+            : 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30 shadow-emerald-500/10';
+
+          return `
+            <div class="p-4 bg-[#060c18] border border-slate-800/90 rounded-xl flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-md hover:border-slate-700 transition">
+              <div class="space-y-2 max-w-xl">
+                <div class="flex flex-wrap items-center gap-2">
+                  <span class="px-2.5 py-0.5 text-[10px] font-mono font-bold rounded-lg border shadow-sm ${badgeClass}" title="Based on category severity, days unresolved, people affected, facility type, and how many duplicate reports clustered together.">
+                    Campus AI Score: ${c.campusAIScore}/100
+                  </span>
+                  ${c.isEmergencyFlagged ? '<span class="text-[10px] bg-rose-600 text-white font-bold px-2 py-0.5 rounded">🚨 CRITICAL AUTHORITIES DISPATCH</span>' : ''}
+                  <span class="text-[11px] font-semibold text-slate-300">📍 ${c.locationName}</span>
+                  <span class="text-[10px] bg-slate-900 border border-slate-800 px-2 py-0.5 rounded font-mono text-cyan-300 font-semibold">
+                    ⚡ ${c.reportCount} ${c.reportCount === 1 ? 'Report' : 'Merged Reports'}
+                  </span>
+                  <span class="text-[10px] bg-slate-800/80 border border-slate-700 px-2 py-0.5 rounded font-mono text-amber-300">
+                    ⏳ Max Delay: ${c.maxDaysUnresolved || 1}d
+                  </span>
+                  <span class="text-[10px] text-slate-400 font-mono">
+                    👥 ~${c.estAffected} Affected
+                  </span>
+                </div>
+                <h3 class="text-sm font-bold text-white tracking-tight">${c.title}</h3>
+                <p class="text-xs text-slate-400">
+                  <span class="text-slate-500 font-semibold">Latest voice:</span> "${c.reports[0].description}"
+                </p>
+
+                ${c.photoData ? `
+                  <div class="pt-1">
+                    <span class="text-[10px] text-slate-400 font-mono block mb-1">Attached Incident Photo:</span>
+                    <img src="${c.photoData}" alt="Cluster Evidence" class="h-16 w-auto rounded border border-slate-700 object-cover">
+                  </div>
+                ` : ''}
+              </div>
+
+              <div class="flex items-center space-x-2 self-end md:self-center shrink-0">
+                <button onclick="toggleClusterStatus('${c.id}')" class="px-3.5 py-1.5 text-xs font-semibold rounded-xl transition ${
+                  c.status === 'Resolved' 
+                    ? 'bg-slate-800 text-slate-400 hover:bg-slate-700' 
+                    : 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-lg shadow-emerald-600/20'
+                }">
+                  ${c.status === 'Resolved' ? 'Reopen Ticket' : '✓ Mark Resolved'}
+                </button>
+              </div>
+            </div>
+          `;
+        }).join('');
+      }
+
+      renderMacroTable();
+      renderMapMarkers();
+    }
+
+    function renderMacroTable() {
+      const tbody = document.getElementById('macroTableBody');
+      tbody.innerHTML = Object.keys(UNIVERSITIES).map(uId => {
+        const u = UNIVERSITIES[uId];
+        const data = tenantData[uId];
+        const rawCount = data.rawReports.length;
+        const clustCount = data.clusters.length;
+        const noise = rawCount > 0 ? Math.round(((rawCount - clustCount) / rawCount) * 100) : 0;
+        const healthScore = Math.max(70, Math.min(99, 100 - (clustCount * 3)));
+
+        return `
+          <tr class="hover:bg-slate-900/50 transition">
+            <td class="p-3.5 font-bold text-white flex items-center gap-2">
+              <span class="w-2 h-2 rounded-full ${uId === currentTenant ? 'bg-emerald-400' : 'bg-slate-600'}"></span>
+              ${u.name}
+            </td>
+            <td class="p-3.5 text-slate-400 font-mono">${u.population.toLocaleString()} Students</td>
+            <td class="p-3.5 font-mono text-white font-semibold">${rawCount}</td>
+            <td class="p-3.5 font-mono text-emerald-400 font-semibold">${clustCount}</td>
+            <td class="p-3.5 font-mono text-emerald-400 font-semibold">${noise}%</td>
+            <td class="p-3.5 font-mono text-slate-300">~2.4 Hrs</td>
+            <td class="p-3.5 font-mono font-bold ${healthScore >= 90 ? 'text-emerald-400' : 'text-amber-400'}">
+              ${healthScore} / 100
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    function toggleClusterStatus(clusterId) {
+      const storage = tenantData[currentTenant];
+      const cl = storage.clusters.find(c => c.id === clusterId);
+      if (cl) {
+        cl.status = cl.status === 'Resolved' ? 'Under AI Monitoring' : 'Resolved';
+        updateUI();
+      }
+    }
+
+    function handleStudentSubmit(e) {
+      e.preventDefault();
+      let title = document.getElementById('titleInput').value.trim();
+      let description = document.getElementById('descInput').value.trim();
+      const category = document.getElementById('categoryInput').value;
+      const locationName = document.getElementById('locationInput').value;
+      const daysUnresolved = document.getElementById('daysUnresolvedInput').value;
+      const impactScope = document.getElementById('impactScopeInput').value;
+      const isEmergencyFlagged = document.getElementById('emergencyEscalateCheck').checked;
+
+      // Handle non-compulsory description / title when photo is attached
+      if (!title) {
+        title = attachedPhotoBase64 ? `${category} (Photo Report)` : `${category} Incident`;
+      }
+      if (!description) {
+        description = attachedPhotoBase64 ? 'Visual incident telemetry submitted via on-device camera/upload.' : 'No text description provided.';
+      }
+
+      const report = processReport({ 
+        title, 
+        description, 
+        category, 
+        locationName, 
+        daysUnresolved, 
+        impactScope, 
+        tenantId: currentTenant,
+        photoData: attachedPhotoBase64,
+        isEmergencyFlagged,
+        aiAnalysis: lastAIAnalysis
+      });
+
+      const notif = document.getElementById('studentNotification');
+      notif.innerHTML = `
+        <div class="flex items-center justify-between">
+          <div class="font-bold text-emerald-300 flex items-center gap-1.5 text-sm">
+            <span>🔒 Report Logged & Processed</span>
+            ${report.authoritiesNotified ? '<span class="text-rose-400 font-bold ml-2">🚨 Campus Authorities Alerted</span>' : ''}
+          </div>
+          <span class="font-mono text-xs px-2.5 py-1 rounded bg-emerald-900/60 text-emerald-200 border border-emerald-700" title="Based on category severity, days unresolved, people affected, facility type, and how many duplicate reports clustered together.">
+            Campus AI Score: ${report.campusAIScore}/100
+          </span>
+        </div>
+        <div class="text-[11.5px] text-slate-300 mt-2 space-y-1">
+          <div>Anonymous Pseudonym: <strong>${report.blindedStudentId}</strong> • Severity Tag: <strong class="text-cyan-300">${report.tag}</strong></div>
+          ${report.photoData ? '<div class="text-emerald-300 font-mono text-[10.5px]">✓ Photo/video telemetry attached & AI-analyzed</div>' : ''}
+          <div>Your Private Claim Token: <span class="text-cyan-300 font-mono font-bold">${report.claimToken}</span> (Saved locally).</div>
+        </div>
+      `;
+      notif.classList.remove('hidden');
+      setTimeout(() => notif.classList.add('hidden'), 7000);
+
+      const wasCritical = report.authoritiesNotified;
+      const criticalAISummary = (lastAIAnalysis && lastAIAnalysis.isCritical) ? lastAIAnalysis.summary : null;
+
+      // Reset form fields
+      document.getElementById('titleInput').value = '';
+      document.getElementById('descInput').value = '';
+      document.getElementById('emergencyEscalateCheck').checked = false;
+      document.getElementById('sanitizationPreviewBox').classList.add('hidden');
+      document.getElementById('blindedHashBadge').innerText = generateBlindedToken();
+      removeAttachedPhoto();
+
+      if (wasCritical) {
+        showToast('🚨 Critical report — Campus Authorities notified automatically', '🚨');
+        // Only genuinely critical reports (checkbox, AI-detected emergency, or a
+        // very high CampusAI score) pop the authorities contact sheet. Minor/
+        // routine issues never trigger this — they just join the normal queue.
+        const reason = criticalAISummary
+          ? `🤖 Gemini Vision flagged this as an emergency: "${criticalAISummary}". Please contact the relevant authority below immediately.`
+          : `This report's CampusAI Score (${report.campusAIScore}/100) crossed the critical threshold. Please contact the relevant authority below immediately.`;
+        openEmergencyModal(reason);
+      } else {
+        showToast('Report submitted & prioritized', '✅');
+      }
+    }
+
+    function switchTab(tab) {
+      // Defense in depth: students are hard-locked to the Student Portal,
+      // even if 'admin'/'macro' is ever invoked directly (e.g. via console).
+      if (currentUser && currentUser.role === 'student' && tab !== 'student') {
+        tab = 'student';
+      }
+
+      ['studentTab', 'adminTab', 'macroTab'].forEach(t => document.getElementById(t).classList.add('hidden'));
+      ['tabStudentBtn', 'tabAdminBtn', 'tabMacroBtn'].forEach(b => {
+        document.getElementById(b).className = 'px-3.5 py-1.5 text-xs font-semibold rounded-lg transition text-slate-400 hover:text-white';
+      });
+
+      if (tab === 'student') {
+        document.getElementById('studentTab').classList.remove('hidden');
+        document.getElementById('tabStudentBtn').className = 'px-3.5 py-1.5 text-xs font-semibold rounded-lg transition bg-emerald-600 text-white shadow-md shadow-emerald-600/30';
+      } else if (tab === 'admin') {
+        document.getElementById('adminTab').classList.remove('hidden');
+        document.getElementById('tabAdminBtn').className = 'px-3.5 py-1.5 text-xs font-semibold rounded-lg transition bg-emerald-600 text-white shadow-md shadow-emerald-600/30';
+        setTimeout(() => {
+          if (!map) initMap();
+          else map.invalidateSize();
+        }, 120);
+      } else if (tab === 'macro') {
+        document.getElementById('macroTab').classList.remove('hidden');
+        document.getElementById('tabMacroBtn').className = 'px-3.5 py-1.5 text-xs font-semibold rounded-lg transition bg-emerald-600 text-white shadow-md shadow-emerald-600/30';
+      }
+    }
+
+    function initMap() {
+      const tenant = UNIVERSITIES[currentTenant];
+      
+      map = L.map('map', { attributionControl: true }).setView(tenant.mapCenter, tenant.zoom);
+      
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19,
+        subdomains: ['a', 'b', 'c'],
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap contributors</a>'
+      }).addTo(map);
+
+      markersLayer = L.layerGroup().addTo(map);
+      renderMapMarkers();
+    }
+
+    function renderMapMarkers() {
+      if (!map || !markersLayer) return;
+      markersLayer.clearLayers();
+
+      const tenant = UNIVERSITIES[currentTenant];
+      const storage = tenantData[currentTenant];
+
+      Object.entries(tenant.locations).forEach(([name, data]) => {
+        const activeClusters = storage.clusters.filter(c => c.locationName === name && c.status !== 'Resolved');
+        const clusterCount = activeClusters.length;
+        const highestScore = Math.max(0, ...activeClusters.map(c => c.campusAIScore));
+
+        const radius = Math.min(26, Math.max(9, clusterCount * 5));
+        const color = highestScore >= 75 ? '#f43f5e' : (highestScore >= 50 ? '#f59e0b' : '#6366f1');
+
+        const circle = L.circleMarker([data.lat, data.lng], {
+          radius: radius,
+          fillColor: color,
+          color: '#ffffff',
+          weight: 1.5,
+          opacity: 0.95,
+          fillOpacity: 0.75
+        }).addTo(markersLayer);
+
+        circle.bindPopup(`
+          <div class="text-xs p-1 font-sans">
+            <strong style="color: #0f172a; font-size: 13px;">${name}</strong><br/>
+            <span style="color: #475569;">Facility: ${data.type}</span><br/>
+            <span style="color: #1e293b; font-weight: 600;">Active Issues: ${clusterCount}</span><br/>
+            <span style="color: #0284c7; font-weight: 600;">Peak Campus AI Score: ${highestScore}/100</span>
+          </div>
+        `);
+      });
+    }
+
+    function injectSimulatedBatch(showUserToast = false) {
+      processReport({
+        title: 'Room not cleaned for over 30 days in hostel block',
+        description: 'Housekeeping staff has neglected floor sweeping and waste disposal for a month.',
+        category: 'Hostel & Pest Control',
+        locationName: 'Adhiyaman Hostel',
+        daysUnresolved: 30,
+        impactScope: 35,
+        tenantId: 'srmist',
+        isEmergencyFlagged: false
+      });
+
+      processReport({
+        title: 'Bathroom pipe leaking for 15 days continuously',
+        description: 'Water has been seeping into the floor walls for more than two weeks in room 312.',
+        category: 'Sanitation & Water Supply',
+        locationName: 'M-Block Hostel',
+        daysUnresolved: 25,
+        impactScope: 2,
+        tenantId: 'srmist'
+      });
+
+      processReport({
+        title: 'Elevator completely trapped with students inside',
+        description: 'Lift in CLT building stopped between 2nd and 3rd floor.',
+        category: 'Civil Infrastructure & Elevators',
+        locationName: 'Central Lecture Theatre (CLT)',
+        daysUnresolved: 1,
+        impactScope: 35,
+        tenantId: 'iitm',
+        isEmergencyFlagged: true
+      });
+
+      if (showUserToast) {
+        showToast('⚡ Scenarios Injected (Chronic Uncleaned Room vs Emergency SOS)');
+      }
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+      handleTenantChange('srmist');
+      injectSimulatedBatch(false);
+      setLoginRole('student');
+    });
+  </script>
+</body>
+</html>
