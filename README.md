@@ -29,7 +29,7 @@ Campus AI brings student reports and facilities response into one simple interfa
 
 ## Preview
 
-Open `index.html` in a modern browser. The map requires an internet connection to load its tiles. Leaflet is loaded from a CDN, and map tiles are provided by OpenStreetMap.
+Open `index.html` in a modern browser. The map requires an internet connection. MapLibre is loaded from a CDN and uses OpenFreeMap’s dark vector style; no map API key is required.
 
 ## Run Locally
 
@@ -75,13 +75,13 @@ Do not put a Gemini or other private API key in `index.html` or any browser-deli
 
 ## Map Attribution
 
-Map tiles are provided by [OpenStreetMap](https://www.openstreetmap.org/). Keep the visible attribution in the map. Use the tile service in accordance with the [OpenStreetMap tile usage policy](https://operations.osmfoundation.org/policies/tiles/).
+The map uses [OpenFreeMap](https://openfreemap.org/) with [OpenStreetMap](https://www.openstreetmap.org/) data. MapLibre displays the provider attribution automatically; keep it visible.
 
 ## Built With
 
 - HTML, CSS, and JavaScript
-- [Leaflet](https://leafletjs.com/) for interactive maps
-- [OpenStreetMap](https://www.openstreetmap.org/) map tiles
+- [MapLibre GL JS](https://maplibre.org/maplibre-gl-js/) for interactive maps
+- [OpenFreeMap](https://openfreemap.org/) vector map style and tiles, based on OpenStreetMap
 
 ## Contributing
 

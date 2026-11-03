@@ -20,9 +20,12 @@
   <link rel="preconnect" href="https://fonts.gstatic.com">
   <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   
-  <!-- Leaflet Map Assets -->
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <!-- MapLibre + OpenFreeMap: no API key required; OpenFreeMap displays map attribution. -->
+  <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@6.16.0/dist/maplibre-gl.css" />
+  <script type="module">
+    import * as maplibregl from 'https://unpkg.com/maplibre-gl@6.16.0/dist/maplibre-gl.mjs';
+    window.maplibregl = maplibregl;
+  </script>
 
   <style>
     body {
@@ -74,20 +77,24 @@
       isolation: isolate !important;
       background: #09110f !important;
     }
-    .leaflet-container {
+    .maplibregl-map {
       z-index: 10 !important;
     }
-    .leaflet-pane {
-      z-index: 1 !important;
-    }
-    .leaflet-top, .leaflet-bottom {
+    .maplibregl-ctrl-top-left, .maplibregl-ctrl-top-right,
+    .maplibregl-ctrl-bottom-left, .maplibregl-ctrl-bottom-right {
       z-index: 20 !important;
     }
     #adminMapCard {
       transform: none !important;
     }
 
-    /* Keep provider tiles unmodified so map labels and attribution stay legible. */
+    .maplibregl-ctrl-group {
+      overflow: hidden;
+      border-radius: 10px !important;
+    }
+    .maplibregl-ctrl-attrib {
+      font-size: 10px;
+    }
   </style>
 
   <style id="urbanova-dark-graphiteemerald">
@@ -834,7 +841,6 @@
       vit: { rawReports: [], clusters: [] }
     };
     let map = null;
-    let markersLayer = null;
 
     // ============================================================
     // AUTHENTICATION (prototype gate)
@@ -1579,9 +1585,7 @@
       document.getElementById('currentTenantSubtitle').innerText = `Showing real-time individual student pings with photos & aging data for ${tenant.name}`;
       document.getElementById('mapTenantTag').innerText = `${tenant.name} (${tenant.campusTag})`;
 
-      if (map) {
-        map.setView(tenant.mapCenter, tenant.zoom);
-      }
+      if (map) map.jumpTo({ center: [tenant.mapCenter[1], tenant.mapCenter[0]], zoom: tenant.zoom });
 
       updateUI();
     }
@@ -1863,7 +1867,7 @@
         document.getElementById('tabAdminBtn').className = 'px-3.5 py-1.5 text-xs font-semibold rounded-lg transition bg-emerald-600 text-white shadow-md shadow-emerald-600/30';
         setTimeout(() => {
           if (!map) initMap();
-          else map.invalidateSize();
+          else map.resize();
         }, 120);
       } else if (tab === 'macro') {
         document.getElementById('macroTab').classList.remove('hidden');
@@ -1873,52 +1877,74 @@
 
     function initMap() {
       const tenant = UNIVERSITIES[currentTenant];
-      
-      map = L.map('map', { attributionControl: true }).setView(tenant.mapCenter, tenant.zoom);
-      
-      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        maxZoom: 19,
-        subdomains: ['a', 'b', 'c'],
-        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap contributors</a>'
-      }).addTo(map);
+      if (!window.maplibregl) {
+        document.getElementById('map').innerHTML = '<div class="p-4 text-sm text-slate-300">Map library could not load. Check your internet connection and refresh.</div>';
+        return;
+      }
 
-      markersLayer = L.layerGroup().addTo(map);
-      renderMapMarkers();
+      map = new window.maplibregl.Map({
+        container: 'map',
+        style: 'https://tiles.openfreemap.org/styles/dark',
+        center: [tenant.mapCenter[1], tenant.mapCenter[0]],
+        zoom: tenant.zoom,
+        attributionControl: { compact: true }
+      });
+      map.addControl(new window.maplibregl.NavigationControl({ showCompass: false }), 'top-left');
+      map.on('load', () => {
+        map.addSource('facility-hotspots', {
+          type: 'geojson',
+          data: { type: 'FeatureCollection', features: [] }
+        });
+        map.addLayer({
+          id: 'facility-hotspot-circles',
+          type: 'circle',
+          source: 'facility-hotspots',
+          paint: {
+            'circle-radius': ['get', 'radius'],
+            'circle-color': ['get', 'color'],
+            'circle-stroke-color': '#ffffff',
+            'circle-stroke-width': 1.5,
+            'circle-opacity': 0.8
+          }
+        });
+        map.on('click', 'facility-hotspot-circles', event => {
+          const feature = event.features?.[0];
+          if (!feature) return;
+          const props = feature.properties;
+          new window.maplibregl.Popup({ closeButton: true, maxWidth: '260px' })
+            .setLngLat(feature.geometry.coordinates)
+            .setHTML(`<div class="text-xs p-1 font-sans"><strong style="color:#0f172a;font-size:13px">${props.name}</strong><br><span style="color:#475569">Facility: ${props.type}</span><br><span style="color:#1e293b;font-weight:600">Active Issues: ${props.count}</span><br><span style="color:#0284c7;font-weight:600">Peak Campus AI Score: ${props.score}/100</span></div>`)
+            .addTo(map);
+        });
+        map.on('mouseenter', 'facility-hotspot-circles', () => { map.getCanvas().style.cursor = 'pointer'; });
+        map.on('mouseleave', 'facility-hotspot-circles', () => { map.getCanvas().style.cursor = ''; });
+        renderMapMarkers();
+      });
+      map.on('error', event => console.warn('Map rendering error:', event.error?.message || event.error));
     }
 
     function renderMapMarkers() {
-      if (!map || !markersLayer) return;
-      markersLayer.clearLayers();
-
+      if (!map || !map.getSource('facility-hotspots')) return;
       const tenant = UNIVERSITIES[currentTenant];
       const storage = tenantData[currentTenant];
-
-      Object.entries(tenant.locations).forEach(([name, data]) => {
+      const features = Object.entries(tenant.locations).map(([name, data]) => {
         const activeClusters = storage.clusters.filter(c => c.locationName === name && c.status !== 'Resolved');
         const clusterCount = activeClusters.length;
         const highestScore = Math.max(0, ...activeClusters.map(c => c.campusAIScore));
-
-        const radius = Math.min(26, Math.max(9, clusterCount * 5));
-        const color = highestScore >= 75 ? '#f43f5e' : (highestScore >= 50 ? '#f59e0b' : '#6366f1');
-
-        const circle = L.circleMarker([data.lat, data.lng], {
-          radius: radius,
-          fillColor: color,
-          color: '#ffffff',
-          weight: 1.5,
-          opacity: 0.95,
-          fillOpacity: 0.75
-        }).addTo(markersLayer);
-
-        circle.bindPopup(`
-          <div class="text-xs p-1 font-sans">
-            <strong style="color: #0f172a; font-size: 13px;">${name}</strong><br/>
-            <span style="color: #475569;">Facility: ${data.type}</span><br/>
-            <span style="color: #1e293b; font-weight: 600;">Active Issues: ${clusterCount}</span><br/>
-            <span style="color: #0284c7; font-weight: 600;">Peak Campus AI Score: ${highestScore}/100</span>
-          </div>
-        `);
+        return {
+          type: 'Feature',
+          geometry: { type: 'Point', coordinates: [data.lng, data.lat] },
+          properties: {
+            name,
+            type: data.type,
+            count: clusterCount,
+            score: highestScore,
+            radius: Math.min(26, Math.max(9, clusterCount * 5)),
+            color: highestScore >= 75 ? '#f43f5e' : (highestScore >= 50 ? '#f59e0b' : '#6366f1')
+          }
+        };
       });
+      map.getSource('facility-hotspots').setData({ type: 'FeatureCollection', features });
     }
 
     function injectSimulatedBatch(showUserToast = false) {
